@@ -10,70 +10,59 @@ impl Iterator for EncodedLine {
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            dbg!(self.index, self.line[self.index..].to_string());
             if self.line.len() <= self.index {
                 return None;
             }
             let line_slice = &self.line[self.index..];
+            self.index += 1;
 
             let c = line_slice.chars().nth(0).unwrap();
             if c.is_numeric() {
-                self.index += 1;
                 return Some(c);
             }
 
             match c {
                 'o' => {
                     if line_slice.starts_with("one") {
-                        self.index += 3;
                         return Some('1');
                     }
                 }
                 't' => {
                     if line_slice.starts_with("two") {
-                        self.index += 3;
                         return Some('2');
                     }
                     if line_slice.starts_with("three") {
-                        self.index += 5;
                         return Some('3');
                     }
                 }
                 'f' => {
                     if line_slice.starts_with("four") {
-                        self.index += 4;
                         return Some('4');
                     }
                     if line_slice.starts_with("five") {
-                        self.index += 4;
                         return Some('5');
                     }
                 }
                 's' => {
                     if line_slice.starts_with("six") {
-                        self.index += 3;
                         return Some('6');
                     }
                     if line_slice.starts_with("seven") {
-                        self.index += 5;
                         return Some('7');
                     }
                 }
                 'e' => {
                     if line_slice.starts_with("eight") {
-                        self.index += 5;
                         return Some('8');
                     }
                 }
                 'n' => {
                     if line_slice.starts_with("nine") {
-                        self.index += 4;
                         return Some('9');
                     }
                 }
                 _ => {}
             }
-            self.index += 1;
         }
     }
 }
@@ -99,8 +88,8 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
         let number = first_digit.unwrap().to_digit(10).unwrap() * 10
             + last_digit.unwrap().to_digit(10).unwrap();
 
-        println!("{}: {}", line, number);
         sum += number;
+        println!("{}: {} => {}", line, number, sum);
     });
 
     Ok(sum.to_string())
@@ -163,6 +152,24 @@ mod tests {
             index: 0,
         };
 
+        assert_eq!(Some('1'), encoded_line.next());
+        assert_eq!(None, encoded_line.next());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_overlap() -> miette::Result<()> {
+        let input = "fivezg8jmf6hrxnhgxxttwoneg";
+        let mut encoded_line = EncodedLine {
+            line: input.to_string(),
+            index: 0,
+        };
+
+        assert_eq!(Some('5'), encoded_line.next());
+        assert_eq!(Some('8'), encoded_line.next());
+        assert_eq!(Some('6'), encoded_line.next());
+        assert_eq!(Some('2'), encoded_line.next());
         assert_eq!(Some('1'), encoded_line.next());
         assert_eq!(None, encoded_line.next());
 
