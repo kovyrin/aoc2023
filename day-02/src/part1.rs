@@ -5,7 +5,6 @@ use crate::custom_error::AocError;
 pub fn possible_draw(draw: &str, limits: &HashMap<&str, u32>) -> bool {
     let draw_cubes = draw.split(",").collect::<Vec<&str>>();
     for cube in draw_cubes {
-        dbg!(cube);
         let cube_parts = cube.trim().split(" ").collect::<Vec<&str>>();
         let color = cube_parts[1];
         let count = cube_parts[0].parse::<u32>().unwrap();
@@ -40,7 +39,6 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
         }
 
         if game_possible {
-            dbg!(game_number);
             possible_games_sum += game_number.parse::<u32>().unwrap();
         }
     }
