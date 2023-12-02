@@ -5,6 +5,10 @@ struct EncodedLine {
     index: usize,
 }
 
+const WORDS: [&str; 9] = [
+    "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+];
+
 impl Iterator for EncodedLine {
     type Item = char;
 
@@ -21,47 +25,11 @@ impl Iterator for EncodedLine {
                 return Some(c);
             }
 
-            match c {
-                'o' => {
-                    if line_slice.starts_with("one") {
-                        return Some('1');
-                    }
+            for (pos, word) in WORDS.iter().enumerate() {
+                if line_slice.starts_with(word) {
+                    let c = std::char::from_digit(pos as u32 + 1, 10).unwrap();
+                    return Some(c);
                 }
-                't' => {
-                    if line_slice.starts_with("two") {
-                        return Some('2');
-                    }
-                    if line_slice.starts_with("three") {
-                        return Some('3');
-                    }
-                }
-                'f' => {
-                    if line_slice.starts_with("four") {
-                        return Some('4');
-                    }
-                    if line_slice.starts_with("five") {
-                        return Some('5');
-                    }
-                }
-                's' => {
-                    if line_slice.starts_with("six") {
-                        return Some('6');
-                    }
-                    if line_slice.starts_with("seven") {
-                        return Some('7');
-                    }
-                }
-                'e' => {
-                    if line_slice.starts_with("eight") {
-                        return Some('8');
-                    }
-                }
-                'n' => {
-                    if line_slice.starts_with("nine") {
-                        return Some('9');
-                    }
-                }
-                _ => {}
             }
         }
     }
