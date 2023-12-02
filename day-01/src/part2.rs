@@ -14,61 +14,59 @@ impl Iterator for EncodedLine {
             if self.line.len() <= self.index {
                 return None;
             }
+            let line_slice = &self.line[self.index..];
 
-            let c = self.line.chars().nth(self.index).unwrap();
+            let c = line_slice.chars().nth(0).unwrap();
             if c.is_numeric() {
                 self.index += 1;
                 return Some(c);
             }
 
             match c {
-                // one
                 'o' => {
-                    if self.line[self.index..].starts_with("one") {
+                    if line_slice.starts_with("one") {
                         self.index += 3;
                         return Some('1');
                     }
                 }
-                // two, three
                 't' => {
-                    if self.line[self.index..].starts_with("two") {
+                    if line_slice.starts_with("two") {
                         self.index += 3;
                         return Some('2');
-                    } else if self.line[self.index..].starts_with("three") {
+                    }
+                    if line_slice.starts_with("three") {
                         self.index += 5;
                         return Some('3');
                     }
                 }
-                // four, five
                 'f' => {
-                    if self.line[self.index..].starts_with("four") {
+                    if line_slice.starts_with("four") {
                         self.index += 4;
                         return Some('4');
-                    } else if self.line[self.index..].starts_with("five") {
+                    }
+                    if line_slice.starts_with("five") {
                         self.index += 4;
                         return Some('5');
                     }
                 }
-                // six, seven
                 's' => {
-                    if self.line[self.index..].starts_with("six") {
+                    if line_slice.starts_with("six") {
                         self.index += 3;
                         return Some('6');
-                    } else if self.line[self.index..].starts_with("seven") {
+                    }
+                    if line_slice.starts_with("seven") {
                         self.index += 5;
                         return Some('7');
                     }
                 }
-                // eight
                 'e' => {
-                    if self.line[self.index..].starts_with("eight") {
+                    if line_slice.starts_with("eight") {
                         self.index += 5;
                         return Some('8');
                     }
                 }
-                // nine
                 'n' => {
-                    if self.line[self.index..].starts_with("nine") {
+                    if line_slice.starts_with("nine") {
                         self.index += 4;
                         return Some('9');
                     }
