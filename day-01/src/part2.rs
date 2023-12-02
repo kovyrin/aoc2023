@@ -134,7 +134,7 @@ mod tests {
 
     #[test]
     fn test_iterator() -> miette::Result<()> {
-        let input = "one2three";
+        let input = "one2threefourfive6seven8nine";
         let mut encoded_line = EncodedLine {
             line: input.to_string(),
             index: 0,
@@ -143,6 +143,12 @@ mod tests {
         assert_eq!(Some('1'), encoded_line.next());
         assert_eq!(Some('2'), encoded_line.next());
         assert_eq!(Some('3'), encoded_line.next());
+        assert_eq!(Some('4'), encoded_line.next());
+        assert_eq!(Some('5'), encoded_line.next());
+        assert_eq!(Some('6'), encoded_line.next());
+        assert_eq!(Some('7'), encoded_line.next());
+        assert_eq!(Some('8'), encoded_line.next());
+        assert_eq!(Some('9'), encoded_line.next());
         assert_eq!(None, encoded_line.next());
 
         Ok(())
