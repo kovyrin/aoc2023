@@ -88,15 +88,16 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
             index: 0,
         };
 
-        let digit1 = encoded_line.next();
-        let mut digit2 = encoded_line.last();
+        let first_digit = encoded_line.next();
+        let mut last_digit = encoded_line.last();
 
-        if digit2.is_none() {
-            digit2 = digit1;
+        // If there is only one digit, use it twice
+        if last_digit.is_none() {
+            last_digit = first_digit;
         }
 
-        let number =
-            digit1.unwrap().to_digit(10).unwrap() * 10 + digit2.unwrap().to_digit(10).unwrap();
+        let number = first_digit.unwrap().to_digit(10).unwrap() * 10
+            + last_digit.unwrap().to_digit(10).unwrap();
 
         println!("{}: {}", line, number);
         sum += number;
