@@ -10,12 +10,7 @@ struct Card {
 
 impl Card {
     fn from_str(line: &str) -> Self {
-        dbg!(line);
         let parts = line.split(":").collect::<Vec<&str>>();
-        // let card_number = parts[0].trim().split_whitespace().collect::<Vec<&str>>()[1]
-        //     .parse()
-        //     .unwrap();
-
         let num_parts = parts[1].trim().split("|").collect::<Vec<&str>>();
         let winning_nums = num_parts[0]
             .trim()
