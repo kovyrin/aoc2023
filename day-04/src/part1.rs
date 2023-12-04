@@ -10,21 +10,17 @@ struct Card {
 
 impl Card {
     fn from_str(line: &str) -> Self {
-        let parts = line.split(":").collect::<Vec<&str>>();
-        let num_parts = parts[1].trim().split("|").collect::<Vec<&str>>();
+        let tickets = line.split(":").last().unwrap().trim();
+        let num_parts = tickets.split("|").collect::<Vec<&str>>();
         let winning_nums = num_parts[0]
             .trim()
             .split_whitespace()
-            .collect::<Vec<&str>>()
-            .iter()
             .map(|n| n.trim().parse().unwrap())
             .collect::<HashSet<u32>>();
 
         let owned_nums = num_parts[1]
             .trim()
             .split_whitespace()
-            .collect::<Vec<&str>>()
-            .iter()
             .map(|n| n.trim().parse().unwrap())
             .collect::<HashSet<u32>>();
 
