@@ -9,14 +9,14 @@ use crate::custom_error::AocError;
 #[derive(Debug)]
 pub struct MapRange {
     source_start: u64,
+    source_end: u64,
     destination_start: u64,
-    length: u64,
 }
 
 impl MapRange {
     // Receives a source range and returns a destination range
     fn map(&self, source_start: u64, source_end: u64) -> Option<(Range<u64>, u64)> {
-        if !self.source_range().contains(&source_start) {
+        if !(self.source_start..self.source_end).contains(&source_start) {
             return None;
         }
 
@@ -24,20 +24,12 @@ impl MapRange {
         //.....[------]..........
         println!("  found range {:?}", self);
         let match_start = source_start;
-        let match_end = std::cmp::min(source_end, self.source_end());
+        let match_end = std::cmp::min(source_end, self.source_end);
         let match_offset = source_start - self.source_start;
 
         let dest_start = self.destination_start + match_offset;
         let dest_end = dest_start + (match_end - match_start);
         return Some((dest_start..dest_end, match_end));
-    }
-
-    fn source_range(&self) -> Range<u64> {
-        self.source_start..self.source_start + self.length
-    }
-
-    fn source_end(&self) -> u64 {
-        self.source_start + self.length
     }
 }
 
@@ -65,10 +57,11 @@ impl SomethingToSomethingMap {
                     let destination_start = parts.next().unwrap().parse::<u64>().unwrap();
                     let source_start = parts.next().unwrap().parse::<u64>().unwrap();
                     let length = parts.next().unwrap().parse::<u64>().unwrap();
+                    let source_end = source_start + length;
                     ranges_map.push(MapRange {
                         source_start,
+                        source_end,
                         destination_start,
-                        length,
                     });
                 }
                 _ => break,
@@ -96,7 +89,7 @@ impl SomethingToSomethingMap {
         let applicable_ranges = self
             .ranges_map
             .iter()
-            .filter(|r| r.source_end() > source_start);
+            .filter(|r| r.source_end > source_start);
 
         if applicable_ranges.clone().count() == 0 {
             println!(
@@ -107,7 +100,7 @@ impl SomethingToSomethingMap {
         }
 
         let min_range_start = applicable_ranges.clone().map(|r| r.source_start).min();
-        let max_range_end = applicable_ranges.clone().map(|r| r.source_end()).max();
+        let max_range_end = applicable_ranges.clone().map(|r| r.source_end).max();
 
         println!("  source_start: {}", source_start);
         println!("  source_end: {}", source_end);
