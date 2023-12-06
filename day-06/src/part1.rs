@@ -16,7 +16,11 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
         .collect::<Vec<_>>();
 
     // Merge times and distances into a vector of tuples
-    let races = times.iter().zip(distances.iter()).collect::<Vec<_>>();
+    let races = times
+        .iter()
+        .zip(distances.iter())
+        .map(|(t, d)| (*t, *d))
+        .collect::<Vec<_>>();
 
     let mut result = 1;
     for race in races {
@@ -26,7 +30,7 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
         for time in 1..race_time - 1 {
             let speed = time;
             let distance = (race_time - time) * speed;
-            if distance > *best_distance {
+            if distance > best_distance {
                 better_results += 1;
             }
         }
