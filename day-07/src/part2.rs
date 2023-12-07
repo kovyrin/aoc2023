@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::custom_error::AocError;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
@@ -51,32 +53,18 @@ enum HandType {
 
 impl HandType {
     fn from_cards(cards: &Vec<Card>) -> HandType {
-        let mut counts_by_card = std::collections::HashMap::new();
-        for card in cards.iter() {
-            let count = counts_by_card.entry(card).or_insert(0);
-            *count += 1;
-        }
-
-        let mut counts = counts_by_card.iter().collect::<Vec<_>>();
-        counts.sort_by(|a, b| b.1.cmp(&a.1));
-
-        let mut jocker_count = 0;
-        if cards.contains(&Card::Joker) {
-            jocker_count = cards.iter().filter(|c| **c == Card::Joker).count();
-        }
-
-        if jocker_count == 5 {
+        let joker_count = cards.iter().filter(|c| **c == Card::Joker).count();
+        if joker_count == 5 {
             return HandType::FiveOfAKind;
         }
 
-        let first_non_joker_count = counts
+        let counts_by_card = cards
             .iter()
-            .filter(|(card, _)| *card != &&Card::Joker)
-            .next()
-            .unwrap()
-            .1;
+            .filter(|c| **c != Card::Joker)
+            .counts_by(|c| *c);
+        let counts = counts_by_card.values().sorted().rev().collect_vec();
 
-        match first_non_joker_count + jocker_count {
+        match counts[0] + joker_count {
             5 => HandType::FiveOfAKind,
             4 => HandType::FourOfAKind,
             3 => {
@@ -155,7 +143,7 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
             let bid = parts.next().unwrap().parse::<u64>().unwrap();
             Play { hand, bid }
         })
-        .collect::<Vec<_>>();
+        .collect_vec();
 
     plays.sort_by(|a, b| a.hand.partial_cmp(&b.hand).unwrap());
 
@@ -230,6 +218,7 @@ mod tests {
             ("KTJJT", HandType::FourOfAKind),
             ("QQQJA", HandType::FourOfAKind),
             ("JJJJJ", HandType::FiveOfAKind),
+            ("2345J", HandType::OnePair),
         ];
 
         for (hand_str, expected_hand_type) in tests {
@@ -259,6 +248,10 @@ mod tests {
         let two_pair = Hand::from_str("23432");
         let one_pair = Hand::from_str("A23A4");
         assert!(two_pair > one_pair);
+
+        let five_of_a_kind = Hand::from_str("22222");
+        let file_jacks = Hand::from_str("JJJJJ");
+        assert!(five_of_a_kind > file_jacks);
     }
 
     #[test]
@@ -275,3 +268,4 @@ mod tests {
 
 // Submissions:
 // 250475140 - too low
+// 250665248 - correct
