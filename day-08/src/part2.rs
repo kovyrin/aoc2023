@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-
 use crate::custom_error::AocError;
+use num_integer::lcm;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 struct Node {
@@ -8,20 +8,46 @@ struct Node {
     right: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct StepGenerator {
     instructions: Vec<char>,
     current: usize,
+    step_count: usize,
 }
 
 impl StepGenerator {
     fn next(&mut self) -> char {
         let step = self.instructions[self.current];
         self.current += 1;
+        self.step_count += 1;
         if self.current >= self.instructions.len() {
             self.current = 0;
         }
         step
+    }
+}
+
+#[derive(Debug)]
+struct Ghost {
+    current: String,
+    steps: StepGenerator,
+}
+
+impl Ghost {
+    fn from_node_name(node_name: &str, steps: &mut StepGenerator) -> Self {
+        Ghost {
+            current: node_name.to_string(),
+            steps: steps.clone(),
+        }
+    }
+
+    fn take_step(&mut self, nodes: &HashMap<&str, Node>) {
+        let node = nodes.get(self.current.as_str()).unwrap();
+        self.current = match self.steps.next() {
+            'L' => node.left.clone(),
+            'R' => node.right.clone(),
+            _ => unreachable!(),
+        };
     }
 }
 
@@ -32,6 +58,7 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     let mut steps = StepGenerator {
         instructions: instructions.chars().collect(),
         current: 0,
+        step_count: 0,
     };
 
     lines.next();
@@ -53,37 +80,29 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
         nodes.insert(node_name, Node { left, right });
     }
 
-    // find all the nodes where the name ends with 'A'
-    let mut current_nodes: Vec<&str> = nodes
+    // find all the nodes where the name ends with 'A' and spawn a ghost for each
+    let mut ghosts: Vec<Ghost> = nodes
         .keys()
         .filter(|k| k.ends_with('A'))
-        .map(|k| *k)
+        .map(|k| Ghost::from_node_name(k, &mut steps))
         .collect();
-    let mut step_count = 0;
 
-    loop {
-        // if all the current nodes end with 'Z', we're done
-        if current_nodes.iter().all(|n| n.ends_with('Z')) {
-            break;
-        }
-
-        let step = steps.next();
-        step_count += 1;
-        if step_count % 1000 == 0 {
-            println!("step_count: {}", step_count);
-        }
-
-        for current in current_nodes.iter_mut() {
-            let node = nodes.get(current).unwrap();
-            match step {
-                'L' => *current = &node.left,
-                'R' => *current = &node.right,
-                _ => unreachable!(),
+    // Walk each ghost until each of them reaches a node that ends with 'Z'
+    while !ghosts.iter().all(|g| g.current.ends_with('Z')) {
+        for ghost in ghosts.iter_mut() {
+            if !ghost.current.ends_with('Z') {
+                ghost.take_step(&nodes);
             }
         }
     }
 
-    Ok(step_count.to_string())
+    // Find the least common multiple of all the ghost's step counts
+    let mut lcm_steps = 1;
+    for ghost in ghosts.iter() {
+        lcm_steps = lcm(lcm_steps, ghost.steps.step_count);
+    }
+
+    Ok(lcm_steps.to_string())
 }
 
 #[cfg(test)]
@@ -110,4 +129,4 @@ mod tests {
 // Submissions:
 // - 1000000000 - too low
 // - 10000000000 - too low
-// - TBD
+// - 14616363770447 - correct
