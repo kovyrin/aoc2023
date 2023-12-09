@@ -3,20 +3,11 @@ use itertools::Itertools;
 use crate::custom_error::AocError;
 
 pub fn extrapolate(sequence: &Vec<i64>) -> i64 {
-    let mut steps = Vec::with_capacity(sequence.len() - 1);
-    let mut has_non_zero = false;
-    for i in 1..sequence.len() {
-        let step = sequence[i] - sequence[i - 1];
-        has_non_zero = has_non_zero || (step != 0);
-        steps.push(step);
+    if sequence.iter().all(|&n| n == 0) {
+        return 0;
     }
-
-    let last_value = sequence.last().unwrap();
-    if has_non_zero {
-        last_value + extrapolate(&steps)
-    } else {
-        *last_value
-    }
+    let steps = sequence.windows(2).map(|w| w[1] - w[0]).collect();
+    sequence.last().unwrap() + extrapolate(&steps)
 }
 
 #[tracing::instrument]
