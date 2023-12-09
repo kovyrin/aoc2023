@@ -3,21 +3,20 @@ use itertools::Itertools;
 use crate::custom_error::AocError;
 
 pub fn extrapolate(sequence: &Vec<i64>) -> i64 {
-    println!("extrapolate({:?})", sequence);
     let mut steps = Vec::with_capacity(sequence.len() - 1);
+    let mut has_non_zero = false;
     for i in 1..sequence.len() {
-        steps.push(sequence[i] - sequence[i - 1]);
-    }
-    println!("- steps: {:?}", steps);
-    if steps.iter().all_equal() && steps[0] == 0 {
-        let next = sequence[sequence.len() - 1] + steps[1];
-        println!("- next for {:?} is {}", sequence, next);
-        return next;
+        let step = sequence[i] - sequence[i - 1];
+        has_non_zero = has_non_zero || (step != 0);
+        steps.push(step);
     }
 
-    let next = sequence[sequence.len() - 1] + extrapolate(&steps);
-    println!("- next for {:?} is {}", sequence, next);
-    next
+    let last_value = sequence.last().unwrap();
+    if has_non_zero {
+        last_value + extrapolate(&steps)
+    } else {
+        *last_value
+    }
 }
 
 #[tracing::instrument]
@@ -29,9 +28,7 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
             .split_whitespace()
             .map(|n| n.parse::<i64>().unwrap())
             .collect_vec();
-        let next_number = extrapolate(&sequence);
-        println!("{:?} -> {}\n", sequence, next_number);
-        sum += next_number;
+        sum += extrapolate(&sequence);
     }
     Ok(sum.to_string())
 }
