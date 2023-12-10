@@ -103,7 +103,8 @@ pub fn next_outside_direction(
             }
         }
         Pipe::Start => {
-            panic!("Found start again!")
+            current_outside_dir // No change in direction
+                                // TODO: this is not right...
         }
     }
 }
@@ -172,7 +173,22 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
         visited.insert(current);
     }
 
-    // Figure out w
+    // Figure out the start cell's type based on its two neighbours in the loop
+    // let (pre_start, pre_start_type) = path.last().unwrap();
+    // let (post_start, post_start_type) = path[1];
+    // let start_type = match (pre_start_type, post_start_type) {
+    //     (Pipe::Horizontal, Pipe::Horizontal) => Pipe::Horizontal,
+    //     (Pipe::Vertical, Pipe::Vertical) => Pipe::Vertical,
+    //     (Pipe::Horizontal, Pipe::Vertical) => Pipe::FBend,
+    //     (Pipe::Vertical, Pipe::Horizontal) => Pipe::FBend,
+    //     (Pipe::Horizontal, Pipe::JBend) => Pipe::SevenBend,
+    //     (Pipe::Vertical, Pipe::LBend) => Pipe::SevenBend,
+    //     (Pipe::Horizontal, Pipe::SevenBend) => Pipe::JBend,
+    //     (Pipe::Vertical, Pipe::FBend) => Pipe::JBend,
+    //     (Pipe::Horizontal, Pipe::FBend) => Pipe::LBend,
+    //     (Pipe::Vertical, Pipe::SevenBend) => Pipe::LBend,
+    //     _ => panic!("Could not determine start type"),
+    // };
 
     // Create a new map with the visited points and flood fill it
     // (the map and points are offset by 1 to allow the flood fill to work around all the edges)
