@@ -1,9 +1,6 @@
+use crate::custom_error::AocError;
+use crate::utils::{CharMap, Point};
 use std::vec;
-
-use crate::{
-    custom_error::AocError,
-    utils::{CharMap, Point},
-};
 
 // Finds coordinates of all empty rows and columns
 fn find_expansions(map: &CharMap) -> (Vec<usize>, Vec<usize>) {
@@ -11,7 +8,6 @@ fn find_expansions(map: &CharMap) -> (Vec<usize>, Vec<usize>) {
     for x in 0..map.width() {
         let mut empty = true;
         for y in 0..map.height() {
-            // TODO: make point generic over type
             if *map.cell(x as i64, y as i64) != '.' {
                 empty = false;
                 break;
@@ -50,17 +46,6 @@ pub fn process(input: &str, expansion_factor: usize) -> miette::Result<String, A
         let expanded_x = galaxy.x as usize + expansion_size_x;
         let expanded_y = galaxy.y as usize + expansion_size_y;
 
-        println!(
-            "Galaxy at {:?} expands to {:?}",
-            galaxy,
-            Point::new(expanded_x as i64, expanded_y as i64)
-        );
-        println!(
-            "Empty to left: {:?}, empty to top: {:?}",
-            empty_to_left.collect::<Vec<_>>(),
-            empty_to_top.collect::<Vec<_>>()
-        );
-
         expanded_galaxies.push(Point::new(expanded_x as i64, expanded_y as i64));
     }
 
@@ -69,9 +54,7 @@ pub fn process(input: &str, expansion_factor: usize) -> miette::Result<String, A
         let src = expanded_galaxies[i];
         for j in i + 1..expanded_galaxies.len() {
             let dst = expanded_galaxies[j];
-            let distance = src.manhattan_distance(&dst);
-            println!("Distance from {:?} to {:?} is {}", src, dst, distance);
-            sum += distance;
+            sum += src.manhattan_distance(&dst);
         }
     }
 
