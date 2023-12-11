@@ -120,7 +120,7 @@ pub fn next_outside_direction(
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
     let map = CharMap::from_str(input, '.');
-    let mut map = map.with_padding(1, 1); // Add padding to ensure that we can walk around the edges
+    let map = map.with_padding(1, 1); // Add padding to ensure that we can walk around the edges
     let start = map.find('S').unwrap();
 
     // A map of a direction (from a current point) to a possible pipe types that can
@@ -184,16 +184,6 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
         visited.insert(current);
     }
 
-    // Figure out the start cell's type based on its two neighbours in the loop
-    let start_pipe = calculate_start_pipe(&path);
-    println!("Start pipe: {:?}", start_pipe);
-    map.set_cell_for_point(&start, start_pipe.to_char());
-    println!("Map with start set:");
-    map.print();
-
-    // Update the path
-    path[0] = (start, start_pipe);
-
     // Create a new map with the visited points and flood fill it
     // (the map and points are offset by 1 to allow the flood fill to work around all the edges)
     println!("Visited map:");
@@ -202,147 +192,28 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
         fill_map.set_cell_for_point(&point, *map.cell_for_point(&point));
     }
     fill_map.print();
-
-    println!("Flood fill:");
     fill_map.flood_fill(Point::new(0, 0), 'O');
-    fill_map.print();
 
-    // Now we need to find one of the visited points that is adjacent to a filled cell
-    let (start, outside_direction) = find_walkaround_start(&fill_map, &path);
-    println!("Walkaround start: {:?} {:?}", start, outside_direction);
-    fill_map.print_with_current(start, 'S');
-
-    // Make the start step the first step in the path (since the walk is a loop, that is OK)
-    let start_idx = path.iter().position(|(point, _)| *point == start).unwrap();
-    path.rotate_left(start_idx);
-
-    // Now we need to walk around the outside of the map until we find the start again
-    // Each time we turn a corner we need to keep track of the direction that is outside
-    // the perimeter we are walking.
-    let mut outside_direction = outside_direction;
-    for step_idx in 0..path.len() - 1 {
-        let (current, current_type) = path[step_idx];
-        let (_, next_type) = path[step_idx + 1];
-
-        println!("Current: {:?} {:?}", current, current_type);
-        println!("Outside direction: {:?}", outside_direction);
-        // fill_map.print_with_current(current, outside_direction.to_char());
-
-        // Check if there is an internal section on the other side of the pipe
-        let internal_direction = outside_direction.opposite();
-        let internal_point = current.neighbour(internal_direction);
-        let internal_cell = fill_map.cell_for_point(&internal_point);
-        if *internal_cell == '.' {
-            println!("Internal point: {:?}", internal_point);
-            fill_map.flood_fill(internal_point, 'I');
-            fill_map.print_with_current(internal_point, '*');
+    for y in 0..fill_map.height() - 1 {
+        let mut outside = true;
+        for x in 0..fill_map.width() - 1 {
+            let cell = fill_map.cell(x as i32, y as i32);
+            if *cell == '.' {
+                if outside {
+                    fill_map.set_cell(x, y, 'O');
+                } else {
+                    fill_map.set_cell(x, y, 'I');
+                }
+            } else if *cell == '|' || *cell == 'L' || *cell == 'J' {
+                outside = !outside;
+            }
         }
-        // Figure out the next step's outside direction
-        outside_direction = next_outside_direction(outside_direction, current_type, next_type)
     }
 
     fill_map.print();
 
     let internal = fill_map.count('I');
     return Ok(internal.to_string());
-}
-
-fn calculate_start_pipe(path: &Vec<(Point, Pipe)>) -> Pipe {
-    let (start, _) = path[0];
-    let (pre_start, pre_start_type) = path.last().unwrap();
-    let (post_start, post_start_type) = path[1];
-
-    let in_dir = pre_start.direction_to(&start);
-    let out_dir = start.direction_to(&post_start);
-
-    println!("Pre start: {:?} -> {}", pre_start, pre_start_type.to_char());
-    println!("Start: {:?} -> S", start);
-    println!(
-        "Post start: {:?} -> {}",
-        post_start,
-        post_start_type.to_char()
-    );
-
-    println!("In direction: {:?}", in_dir);
-    println!("Out direction: {:?}", out_dir);
-
-    match (pre_start_type, post_start_type) {
-        (Pipe::Horizontal, Pipe::Horizontal) => Pipe::Horizontal,
-        (Pipe::Vertical, Pipe::Vertical) => Pipe::Vertical,
-
-        (Pipe::Vertical, Pipe::Horizontal) => {
-            if in_dir == Direction::North {
-                if out_dir == Direction::East {
-                    Pipe::LBend
-                } else {
-                    Pipe::JBend
-                }
-            } else {
-                if out_dir == Direction::East {
-                    Pipe::FBend
-                } else {
-                    Pipe::SevenBend
-                }
-            }
-        }
-
-        (Pipe::Horizontal, Pipe::Vertical) => {
-            if in_dir == Direction::East {
-                if out_dir == Direction::North {
-                    Pipe::JBend
-                } else {
-                    Pipe::SevenBend
-                }
-            } else {
-                if out_dir == Direction::North {
-                    Pipe::LBend
-                } else {
-                    Pipe::FBend
-                }
-            }
-        }
-
-        (Pipe::SevenBend, Pipe::JBend) => {
-            if in_dir == Direction::East {
-                Pipe::FBend
-            } else {
-                if out_dir == Direction::North {
-                    Pipe::LBend
-                } else {
-                    Pipe::FBend
-                }
-            }
-        }
-
-        (Pipe::FBend, Pipe::Vertical) => {
-            if in_dir == Direction::South {
-                Pipe::Vertical
-            } else {
-                if out_dir == Direction::North {
-                    Pipe::LBend
-                } else {
-                    Pipe::SevenBend
-                }
-            }
-        }
-        _ => panic!("Could not determine start type"),
-    }
-}
-
-fn find_walkaround_start(fill_map: &CharMap, visited: &Vec<(Point, Pipe)>) -> (Point, Direction) {
-    for (point, pipe) in visited.iter() {
-        if *pipe != Pipe::Horizontal {
-            continue;
-        }
-
-        let direction = Direction::North;
-        let neighbour = point.neighbour(direction);
-        let cell = fill_map.cell_for_point(&neighbour);
-        if *cell == 'O' {
-            return (point.clone(), direction);
-        }
-    }
-    panic!("Could not find walkaround start");
 }
 
 #[cfg(test)]
@@ -425,4 +296,5 @@ mod tests {
 
 // Submissions:
 // - 393 - too high
-//
+// - 273 - too high
+// - 265 - correct
