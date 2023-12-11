@@ -1,11 +1,8 @@
-use std::collections::{HashMap, HashSet};
-
-use nom::multi::fill;
-
 use crate::{
     custom_error::AocError,
     utils::{CharMap, Direction, Point},
 };
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Pipe {
@@ -29,6 +26,18 @@ impl Pipe {
             '7' => Some(Self::SevenBend),
             'F' => Some(Self::FBend),
             _ => None,
+        }
+    }
+
+    fn to_char(&self) -> char {
+        match self {
+            Self::Start => 'S',
+            Self::Horizontal => '-',
+            Self::Vertical => '|',
+            Self::LBend => 'L',
+            Self::JBend => 'J',
+            Self::SevenBend => '7',
+            Self::FBend => 'F',
         }
     }
 }
@@ -103,8 +112,7 @@ pub fn next_outside_direction(
             }
         }
         Pipe::Start => {
-            current_outside_dir // No change in direction
-                                // TODO: this is not right...
+            panic!("Start pipe should not be encountered in this context")
         }
     }
 }
@@ -112,7 +120,7 @@ pub fn next_outside_direction(
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
     let map = CharMap::from_str(input, '.');
-    let map = map.with_padding(1, 1); // Add padding to ensure that we can walk around the edges
+    let mut map = map.with_padding(1, 1); // Add padding to ensure that we can walk around the edges
     let start = map.find('S').unwrap();
 
     // A map of a direction (from a current point) to a possible pipe types that can
@@ -174,21 +182,12 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     }
 
     // Figure out the start cell's type based on its two neighbours in the loop
-    // let (pre_start, pre_start_type) = path.last().unwrap();
-    // let (post_start, post_start_type) = path[1];
-    // let start_type = match (pre_start_type, post_start_type) {
-    //     (Pipe::Horizontal, Pipe::Horizontal) => Pipe::Horizontal,
-    //     (Pipe::Vertical, Pipe::Vertical) => Pipe::Vertical,
-    //     (Pipe::Horizontal, Pipe::Vertical) => Pipe::FBend,
-    //     (Pipe::Vertical, Pipe::Horizontal) => Pipe::FBend,
-    //     (Pipe::Horizontal, Pipe::JBend) => Pipe::SevenBend,
-    //     (Pipe::Vertical, Pipe::LBend) => Pipe::SevenBend,
-    //     (Pipe::Horizontal, Pipe::SevenBend) => Pipe::JBend,
-    //     (Pipe::Vertical, Pipe::FBend) => Pipe::JBend,
-    //     (Pipe::Horizontal, Pipe::FBend) => Pipe::LBend,
-    //     (Pipe::Vertical, Pipe::SevenBend) => Pipe::LBend,
-    //     _ => panic!("Could not determine start type"),
-    // };
+    let start_pipe = calculate_start_pipe(&path);
+    println!("Start pipe: {:?}", start_pipe);
+    map.set_cell_for_point(&start, start_pipe.to_char());
+
+    // Update the path
+    path[0] = (start, start_pipe);
 
     // Create a new map with the visited points and flood fill it
     // (the map and points are offset by 1 to allow the flood fill to work around all the edges)
@@ -240,6 +239,71 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     }
     let unfilled = fill_map.count('I');
     return Ok(unfilled.to_string());
+}
+
+fn calculate_start_pipe(path: &Vec<(Point, Pipe)>) -> Pipe {
+    let (start, _) = path[0];
+    let (pre_start, pre_start_type) = path.last().unwrap();
+    let (post_start, post_start_type) = path[1];
+
+    let in_dir = pre_start.direction_to(&start);
+    let out_dir = start.direction_to(&post_start);
+
+    println!("Pre start: {:?} -> {}", pre_start, pre_start_type.to_char());
+    println!("Start: {:?} -> S", start);
+    println!(
+        "Post start: {:?} -> {}",
+        post_start,
+        post_start_type.to_char()
+    );
+
+    println!("In direction: {:?}", in_dir);
+    println!("Out direction: {:?}", out_dir);
+
+    match (pre_start_type, post_start_type) {
+        (Pipe::Horizontal, Pipe::Horizontal) => Pipe::Horizontal,
+        (Pipe::Vertical, Pipe::Vertical) => Pipe::Vertical,
+
+        (Pipe::Vertical, Pipe::Horizontal) => {
+            if in_dir == Direction::North {
+                if out_dir == Direction::East {
+                    Pipe::LBend
+                } else {
+                    Pipe::JBend
+                }
+            } else {
+                if out_dir == Direction::East {
+                    Pipe::FBend
+                } else {
+                    Pipe::SevenBend
+                }
+            }
+        }
+
+        (Pipe::Horizontal, Pipe::Vertical) => {
+            if in_dir == Direction::East {
+                if out_dir == Direction::North {
+                    Pipe::JBend
+                } else {
+                    Pipe::SevenBend
+                }
+            } else {
+                if out_dir == Direction::North {
+                    Pipe::LBend
+                } else {
+                    Pipe::FBend
+                }
+            }
+        }
+
+        (Pipe::Horizontal, Pipe::JBend) => todo!(),
+        (Pipe::Vertical, Pipe::LBend) => todo!(),
+        (Pipe::Horizontal, Pipe::SevenBend) => todo!(),
+        (Pipe::Vertical, Pipe::FBend) => todo!(),
+        (Pipe::Horizontal, Pipe::FBend) => todo!(),
+        (Pipe::Vertical, Pipe::SevenBend) => todo!(),
+        _ => panic!("Could not determine start type"),
+    }
 }
 
 fn find_walkaround_start(fill_map: &CharMap, visited: &Vec<(Point, Pipe)>) -> (Point, Direction) {
