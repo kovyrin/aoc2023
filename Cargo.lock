@@ -272,6 +272,7 @@ dependencies = [
  "itertools",
  "miette",
  "nom",
+ "num-traits",
  "thiserror",
  "tracing",
  "tracing-subscriber",
