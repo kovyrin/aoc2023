@@ -133,7 +133,7 @@ impl CharRow {
 
 // A data structure representing a rectangular map where each cell is a char
 // It behaves like a 2D array, but allows out of bounds access (returns the default char)
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CharMap {
     map: Vec<CharRow>,
     height: usize,

@@ -150,7 +150,10 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     println!("Start: {:?}", start);
     let mut path = Vec::new();
 
+    map.print();
+
     loop {
+        // map.print_with_current(current, '*');
         let current_cell = map.cell_for_point(&current);
         let current_pipe = Pipe::from_char(*current_cell).unwrap();
         path.push((current, current_pipe));
@@ -185,6 +188,8 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     let start_pipe = calculate_start_pipe(&path);
     println!("Start pipe: {:?}", start_pipe);
     map.set_cell_for_point(&start, start_pipe.to_char());
+    println!("Map with start set:");
+    map.print();
 
     // Update the path
     path[0] = (start, start_pipe);
@@ -194,7 +199,7 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     println!("Visited map:");
     let mut fill_map = CharMap::from_dimensions(map.width(), map.height(), '.');
     for point in visited.iter() {
-        fill_map.set_cell_for_point(point, 'p');
+        fill_map.set_cell_for_point(&point, *map.cell_for_point(&point));
     }
     fill_map.print();
 
@@ -217,28 +222,29 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     let mut outside_direction = outside_direction;
     for step_idx in 0..path.len() - 1 {
         let (current, current_type) = path[step_idx];
-        let (next, next_type) = path[step_idx + 1];
+        let (_, next_type) = path[step_idx + 1];
 
         println!("Current: {:?} {:?}", current, current_type);
         println!("Outside direction: {:?}", outside_direction);
-        fill_map.print_with_current(current, outside_direction.to_char());
+        // fill_map.print_with_current(current, outside_direction.to_char());
 
         // Check if there is an internal section on the other side of the pipe
-        if current_type == Pipe::Horizontal || current_type == Pipe::Vertical {
-            let internal_direction = outside_direction.opposite();
-            let internal_point = current.neighbour(internal_direction);
-            let internal_cell = fill_map.cell_for_point(&internal_point);
-            if *internal_cell == '.' {
-                println!("Internal point: {:?}", internal_point);
-                fill_map.flood_fill(internal_point, 'I');
-                fill_map.print_with_current(internal_point, '*');
-            }
+        let internal_direction = outside_direction.opposite();
+        let internal_point = current.neighbour(internal_direction);
+        let internal_cell = fill_map.cell_for_point(&internal_point);
+        if *internal_cell == '.' {
+            println!("Internal point: {:?}", internal_point);
+            fill_map.flood_fill(internal_point, 'I');
+            fill_map.print_with_current(internal_point, '*');
         }
-        // TODO: Figure out the next step's outside direction
+        // Figure out the next step's outside direction
         outside_direction = next_outside_direction(outside_direction, current_type, next_type)
     }
-    let unfilled = fill_map.count('I');
-    return Ok(unfilled.to_string());
+
+    fill_map.print();
+
+    let internal = fill_map.count('I');
+    return Ok(internal.to_string());
 }
 
 fn calculate_start_pipe(path: &Vec<(Point, Pipe)>) -> Pipe {
@@ -296,12 +302,17 @@ fn calculate_start_pipe(path: &Vec<(Point, Pipe)>) -> Pipe {
             }
         }
 
-        (Pipe::Horizontal, Pipe::JBend) => todo!(),
-        (Pipe::Vertical, Pipe::LBend) => todo!(),
-        (Pipe::Horizontal, Pipe::SevenBend) => todo!(),
-        (Pipe::Vertical, Pipe::FBend) => todo!(),
-        (Pipe::Horizontal, Pipe::FBend) => todo!(),
-        (Pipe::Vertical, Pipe::SevenBend) => todo!(),
+        (Pipe::SevenBend, Pipe::JBend) => {
+            if in_dir == Direction::East {
+                Pipe::FBend
+            } else {
+                if out_dir == Direction::North {
+                    Pipe::LBend
+                } else {
+                    Pipe::FBend
+                }
+            }
+        }
         _ => panic!("Could not determine start type"),
     }
 }
@@ -366,4 +377,24 @@ mod tests {
         assert_eq!("4", process(input)?);
         Ok(())
     }
+
+    #[test]
+    fn test_process_random_bits() -> miette::Result<()> {
+        let input = ".F----7F7F7F7F-7....
+                     .|F--7||||||||FJ....
+                     .||.FJ||||||||L7....
+                     FJL7L7LJLJ||LJ.L-7..
+                     L--J.L7...LJS7F-7L7.
+                     ....F-J..F7FJ|L7L7L7
+                     ....L7.F7||L7|.L7L7|
+                     .....|FJLJ|FJ|F7|.LJ
+                     ....FJL-7.||.||||...
+                     ....L---J.LJ.LJLJ...";
+        assert_eq!("8", process(input)?);
+        Ok(())
+    }
 }
+
+// Submissions:
+// - 393 - too high
+//
