@@ -5,7 +5,7 @@ use crate::{
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
-pub enum Pipe {
+enum Pipe {
     Horizontal, // -
     Vertical,   // |
     LBend,      // L
@@ -28,23 +28,11 @@ impl Pipe {
             _ => None,
         }
     }
-
-    fn to_char(&self) -> char {
-        match self {
-            Self::Start => 'S',
-            Self::Horizontal => '-',
-            Self::Vertical => '|',
-            Self::LBend => 'L',
-            Self::JBend => 'J',
-            Self::SevenBend => '7',
-            Self::FBend => 'F',
-        }
-    }
 }
 
 // Returns the directions that can be walked from a given pipe type
 // Note: we always walk in a counter-clockwise direction
-pub fn neighbours_for(c: Pipe) -> Vec<Direction> {
+fn neighbours_for(c: Pipe) -> Vec<Direction> {
     match c {
         Pipe::Horizontal => vec![Direction::West, Direction::East],
         Pipe::Vertical => vec![Direction::North, Direction::South],
@@ -58,62 +46,6 @@ pub fn neighbours_for(c: Pipe) -> Vec<Direction> {
             Direction::North,
             Direction::West,
         ],
-    }
-}
-
-// Returns outside direction for the next piece of pipe
-pub fn next_outside_direction(
-    current_outside_dir: Direction,
-    current_type: Pipe,
-    next_type: Pipe,
-) -> Direction {
-    match next_type {
-        Pipe::Horizontal | Pipe::Vertical => {
-            current_outside_dir // No change in direction
-        }
-        Pipe::JBend => {
-            if current_type == Pipe::Horizontal
-                || current_type == Pipe::FBend
-                || current_type == Pipe::LBend
-            {
-                current_outside_dir.turn_left()
-            } else {
-                current_outside_dir.turn_right()
-            }
-        }
-        Pipe::LBend => {
-            if current_type == Pipe::Horizontal
-                || current_type == Pipe::SevenBend
-                || current_type == Pipe::JBend
-            {
-                current_outside_dir.turn_right()
-            } else {
-                current_outside_dir.turn_left()
-            }
-        }
-        Pipe::FBend => {
-            if current_type == Pipe::Horizontal
-                || current_type == Pipe::SevenBend
-                || current_type == Pipe::JBend
-            {
-                current_outside_dir.turn_left()
-            } else {
-                current_outside_dir.turn_right()
-            }
-        }
-        Pipe::SevenBend => {
-            if current_type == Pipe::Horizontal
-                || current_type == Pipe::FBend
-                || current_type == Pipe::LBend
-            {
-                current_outside_dir.turn_right()
-            } else {
-                current_outside_dir.turn_left()
-            }
-        }
-        Pipe::Start => {
-            panic!("Start pipe should not be encountered in this context")
-        }
     }
 }
 
