@@ -6,7 +6,7 @@ fn expand_map(map: &CharMap) -> CharMap {
     for x in 0..map.width() {
         let mut empty = true;
         for y in 0..map.height() {
-            if *map.cell(x as i32, y as i32) != '.' {
+            if *map.cell(x as i64, y as i64) != '.' {
                 empty = false;
                 break;
             }

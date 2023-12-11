@@ -42,23 +42,23 @@ impl Direction {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Point {
-    x: i32,
-    y: i32,
+    pub x: i64,
+    pub y: i64,
 }
 
 impl Point {
-    pub fn new(x: i32, y: i32) -> Self {
+    pub fn new(x: i64, y: i64) -> Self {
         Self { x, y }
     }
 
-    pub fn with_offset(&self, x: i32, y: i32) -> Self {
+    pub fn with_offset(&self, x: i64, y: i64) -> Self {
         Self {
             x: self.x + x,
             y: self.y + y,
         }
     }
 
-    pub fn manhattan_distance(&self, other: &Self) -> i32 {
+    pub fn manhattan_distance(&self, other: &Self) -> i64 {
         (self.x - other.x).abs() + (self.y - other.y).abs()
     }
 
@@ -121,7 +121,7 @@ impl CharRow {
         self.row.iter()
     }
 
-    pub fn cell(&self, idx: i32) -> &char {
+    pub fn cell(&self, idx: i64) -> &char {
         if idx < 0 || idx as usize >= self.width {
             return &self.default;
         }
@@ -193,14 +193,14 @@ impl CharMap {
         self.map.iter()
     }
 
-    pub fn line(&self, idx: i32) -> &CharRow {
+    pub fn line(&self, idx: i64) -> &CharRow {
         if idx < 0 || idx as usize >= self.height {
             return &self.default_row;
         }
         &self.map[idx as usize]
     }
 
-    pub fn cell(&self, x: i32, y: i32) -> &char {
+    pub fn cell(&self, x: i64, y: i64) -> &char {
         if x < 0 || y < 0 || x as usize > self.width() || y as usize > self.height() {
             return &self.default_row.default;
         }
@@ -223,7 +223,7 @@ impl CharMap {
         for (y, line) in self.lines().enumerate() {
             for (x, cell) in line.iter().enumerate() {
                 if *cell == c {
-                    return Some(Point::new(x as i32, y as i32));
+                    return Some(Point::new(x as i64, y as i64));
                 }
             }
         }
@@ -235,7 +235,7 @@ impl CharMap {
         for (y, line) in self.lines().enumerate() {
             for (x, cell) in line.iter().enumerate() {
                 if *cell == c {
-                    result.push(Point::new(x as i32, y as i32));
+                    result.push(Point::new(x as i64, y as i64));
                 }
             }
         }
