@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::custom_error::AocError;
 
 // Implements a bitmask generator that is given a mask vector and returns
@@ -64,7 +66,6 @@ impl MaskGenerator {
 
 fn count_arrangements(records: &str, bad_records: &Vec<u8>) -> u64 {
     let record_chars = records.chars().collect::<Vec<_>>();
-    // println!("input:\t\t{:?}", record_chars);
 
     let mut count = 0;
     let mut mask_generator = MaskGenerator::new(records);
@@ -83,10 +84,8 @@ fn count_arrangements(records: &str, bad_records: &Vec<u8>) -> u64 {
                 }
             }
         }
-        // println!("result option:\t{:?}", result);
 
-        if count_bad_records(&result) == *bad_records {
-            // println!("This works!");
+        if check_bad_records(&result, bad_records) {
             count += 1;
         }
     }
@@ -94,34 +93,51 @@ fn count_arrangements(records: &str, bad_records: &Vec<u8>) -> u64 {
     count
 }
 
-// Counts groups of '#' in the result. The result is a vector of lengths of the groups.
-fn count_bad_records(result: &[char]) -> Vec<u8> {
-    let mut bad_records = vec![];
+fn check_bad_records(result: &[char], expected: &Vec<u8>) -> bool {
+    let mut bad_record_idx = 0;
+    let bad_record_count = expected.len();
     let mut count = 0;
     for c in result {
         if *c == '#' {
             count += 1;
-        } else if count > 0 {
-            bad_records.push(count);
+            if bad_record_idx >= bad_record_count {
+                return false;
+            }
+
+            if count > expected[bad_record_idx] {
+                return false;
+            }
+            continue;
+        }
+
+        if count > 0 {
+            if count != expected[bad_record_idx] {
+                return false;
+            }
+
+            bad_record_idx += 1;
             count = 0;
         }
     }
+
     if count > 0 {
-        bad_records.push(count);
+        bad_record_idx += 1;
     }
-    bad_records
+
+    if bad_record_idx != bad_record_count {
+        return false;
+    }
+
+    true
 }
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
     let mut total = 0;
     for line in input.lines() {
-        let chunks = line.trim().split_whitespace().collect::<Vec<_>>();
+        let chunks = line.trim().split_whitespace().collect_vec();
         let records = chunks[0];
-        let bad_groups = chunks[1]
-            .split(',')
-            .map(|s| s.parse::<u8>().unwrap())
-            .collect::<Vec<_>>();
+        let bad_groups = chunks[1].split(',').map(|s| s.parse().unwrap()).collect();
         total += count_arrangements(records, &bad_groups);
     }
     Ok(total.to_string())
@@ -142,9 +158,24 @@ mod tests {
     }
 
     #[test]
+    fn test_check_bad_records() {
+        assert_eq!(
+            false,
+            check_bad_records(
+                &vec!['.', '#', '#', '#', '.', '#', '.', '#', '.', '.', '.', '.'],
+                &vec![3, 2, 1]
+            )
+        );
+    }
+
+    #[test]
     fn test_count_arrangements() {
-        assert_eq!(1, count_arrangements("???.###", &vec![1, 1, 3]));
-        assert_eq!(4, count_arrangements(".??..??...?##.", &vec![1, 1, 3]));
+        // assert_eq!(1, count_arrangements("???.###", &vec![1, 1, 3]));
+        // assert_eq!(4, count_arrangements(".??..??...?##.", &vec![1, 1, 3]));
+        // assert_eq!(1, count_arrangements("?#?#?#?#?#?#?#?", &vec![1, 3, 1, 6]));
+        // assert_eq!(1, count_arrangements("????.#...#...", &vec![4, 1, 1]));
+        // assert_eq!(4, count_arrangements("????.######..#####.", &vec![1, 6, 5]));
+        assert_eq!(10, count_arrangements("?###????????", &vec![3, 2, 1]));
     }
 
     #[test]
