@@ -18,16 +18,26 @@ use crate::custom_error::AocError;
 //
 #[derive(Debug)]
 struct MaskGenerator {
-    mask: Vec<bool>,
+    mask: u128,
+    mask_len: usize,
     bit_counter: usize,
     max_counter: usize,
 }
 
 impl MaskGenerator {
-    fn new(mask: Vec<bool>) -> Self {
-        let enabled_bits = mask.iter().filter(|b| **b).count();
+    fn new(mask: &str) -> Self {
+        let mask = mask
+            .chars()
+            .rev()
+            .map(|c| if c == '?' { '1' } else { '0' })
+            .collect::<String>();
+        let mask_len = mask.len();
+        let bitmask = u128::from_str_radix(&mask, 2).unwrap();
+        let enabled_bits = mask.chars().filter(|b| *b == '1').count();
+
         Self {
-            mask,
+            mask: bitmask,
+            mask_len,
             bit_counter: 0,
             max_counter: 2usize.pow(enabled_bits as u32),
         }
@@ -38,12 +48,11 @@ impl MaskGenerator {
             return None;
         }
 
-        let mask_len = self.mask.len();
-        let mut result = vec![false; mask_len];
+        let mut result = vec![false; self.mask_len];
         let mut bit_counter = self.bit_counter;
 
-        for i in 0..mask_len {
-            if self.mask[i] {
+        for i in 0..self.mask_len {
+            if self.mask & (1 << i) != 0 {
                 result[i] = bit_counter % 2 == 1;
                 bit_counter /= 2;
             }
@@ -53,29 +62,19 @@ impl MaskGenerator {
     }
 }
 
-fn options_mask(input: &str) -> Vec<bool> {
-    input
-        .chars()
-        .map(|c| match c {
-            '?' => true,
-            _ => false,
-        })
-        .collect::<Vec<_>>()
-}
-
 fn count_arrangements(records: &str, bad_records: &Vec<u8>) -> u64 {
-    let options_mask = options_mask(records);
-    let mut mask_generator = MaskGenerator::new(options_mask);
+    let record_chars = records.chars().collect::<Vec<_>>();
+    // println!("input:\t\t{:?}", record_chars);
 
     let mut count = 0;
-    // println!("input:         {:?}", records.chars().collect::<Vec<_>>());
+    let mut mask_generator = MaskGenerator::new(records);
     while let Some(mask) = mask_generator.next() {
-        let mut result = records.chars().collect::<Vec<_>>();
+        let mut result = record_chars.clone();
         for i in 0..mask.len() {
             result[i] = match mask[i] {
                 true => '#',
                 false => {
-                    let input_char = records.chars().nth(i).unwrap();
+                    let input_char = record_chars[i];
                     if input_char == '?' {
                         '.'
                     } else {
@@ -84,7 +83,7 @@ fn count_arrangements(records: &str, bad_records: &Vec<u8>) -> u64 {
                 }
             }
         }
-        // println!("result option: {:?}", result);
+        // println!("result option:\t{:?}", result);
 
         if count_bad_records(&result) == *bad_records {
             // println!("This works!");
@@ -134,8 +133,7 @@ mod tests {
 
     #[test]
     fn test_generator() {
-        let mask = vec![true, false, true];
-        let mut mask_generator = MaskGenerator::new(mask);
+        let mut mask_generator = MaskGenerator::new("?.?");
         assert_eq!(Some(vec![false, false, false]), mask_generator.next());
         assert_eq!(Some(vec![true, false, false]), mask_generator.next());
         assert_eq!(Some(vec![false, false, true]), mask_generator.next());
@@ -161,3 +159,6 @@ mod tests {
         Ok(())
     }
 }
+
+// Submissions:
+// 7716 - correct
