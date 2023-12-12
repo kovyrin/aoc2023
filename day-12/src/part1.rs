@@ -170,11 +170,11 @@ mod tests {
 
     #[test]
     fn test_count_arrangements() {
-        // assert_eq!(1, count_arrangements("???.###", &vec![1, 1, 3]));
-        // assert_eq!(4, count_arrangements(".??..??...?##.", &vec![1, 1, 3]));
-        // assert_eq!(1, count_arrangements("?#?#?#?#?#?#?#?", &vec![1, 3, 1, 6]));
-        // assert_eq!(1, count_arrangements("????.#...#...", &vec![4, 1, 1]));
-        // assert_eq!(4, count_arrangements("????.######..#####.", &vec![1, 6, 5]));
+        assert_eq!(1, count_arrangements("???.###", &vec![1, 1, 3]));
+        assert_eq!(4, count_arrangements(".??..??...?##.", &vec![1, 1, 3]));
+        assert_eq!(1, count_arrangements("?#?#?#?#?#?#?#?", &vec![1, 3, 1, 6]));
+        assert_eq!(1, count_arrangements("????.#...#...", &vec![4, 1, 1]));
+        assert_eq!(4, count_arrangements("????.######..#####.", &vec![1, 6, 5]));
         assert_eq!(10, count_arrangements("?###????????", &vec![3, 2, 1]));
     }
 
