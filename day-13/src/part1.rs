@@ -28,9 +28,7 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
 
     let mut result = 0;
     for (i, map) in maps.iter().enumerate() {
-        println!("Processing map #{}", i);
         let map_result = process_map(map);
-        println!("Map {} => {}", i, map_result);
         result += map_result;
     }
 
@@ -78,39 +76,19 @@ fn potential_mirror_positions(line: &CharRow) -> HashSet<usize> {
 }
 
 fn is_mirror_at(mirror_pos: usize, line: &CharRow) -> bool {
-    // println!("\nChecking mirror at {} in {:?}", mirror_pos, line);
-
     let mirror_pos = mirror_pos as i64;
     let row_len = line.len();
     let range_size = (row_len as f64 / 2.0).ceil() as i64;
-    // println!("Range size: {}", range_size);
-
     let left_range_start = mirror_pos - range_size as i64;
-    // println!("Left range start: {}", left_range_start);
-
     let left_range = left_range_start..mirror_pos;
-    // println!("Left range: {:?}", left_range);
-    let right_range = mirror_pos..mirror_pos + range_size as i64;
-
-    let left_side = line.slice(&left_range);
-    let right_side = line.slice(&right_range);
-    // println!("Left side: {:?}", left_side);
-    // println!("Right side: {:?}", right_side);
 
     for left_pos in left_range {
         let right_pos = mirror_pos + (range_size - (left_pos - left_range_start)) - 1;
         let left_char = *line.cell(left_pos);
         let right_char = *line.cell(right_pos);
-        // println!(
-        //     "Comparing {} (at {}) <=> {} (at {})",
-        //     left_char, left_pos, right_char, right_pos
-        // );
-
-        if left_char == right_char || left_char == ' ' || right_char == ' ' {
-            continue;
+        if left_char != right_char && left_char != ' ' && right_char != ' ' {
+            return false;
         }
-
-        return false;
     }
     true
 }
@@ -192,7 +170,7 @@ mod tests {
                      ####..#
                      ####..#";
         let map = CharMap::from_iter(input.lines().map(|l| l.trim()), ' ');
-        assert_eq!(5, process_map(&map))
+        assert_eq!(1400, process_map(&map))
     }
 }
 
