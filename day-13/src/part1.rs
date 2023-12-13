@@ -26,12 +26,7 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
         maps.push(map);
     }
 
-    let mut result = 0;
-    for (i, map) in maps.iter().enumerate() {
-        let map_result = process_map(map);
-        result += map_result;
-    }
-
+    let result = maps.iter().map(|m| process_map(&m)).sum::<usize>();
     Ok(result.to_string())
 }
 

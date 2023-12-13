@@ -116,7 +116,7 @@ pub struct CharRow {
 }
 
 impl CharRow {
-    pub fn from_str(mut input: &str, default: char) -> Self {
+    pub fn from_str(input: &str, default: char) -> Self {
         let row = input.chars().collect::<Vec<char>>();
         let width = row.len();
 
