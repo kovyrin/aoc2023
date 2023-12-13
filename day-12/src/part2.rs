@@ -96,7 +96,12 @@ fn can_fit_record(spring_map: &str, record_len: usize) -> bool {
         .all(|c| c == '#' || c == '?')
 }
 
-fn count_arrangements(records: &str, og_bad_records: &Vec<usize>, cache: &mut Cache) -> u64 {
+fn real_count_arrangements(records: &str, bad_records: &Vec<usize>) -> u64 {
+    let mut cache = Cache::new();
+    return solve(records, bad_records, &mut cache);
+}
+
+fn count_arrangements(records: &str, og_bad_records: &Vec<usize>) -> u64 {
     let records = format!(
         "{}?{}?{}?{}?{}",
         records, records, records, records, records
@@ -108,14 +113,12 @@ fn count_arrangements(records: &str, og_bad_records: &Vec<usize>, cache: &mut Ca
     bad_records.extend(og_bad_records);
     bad_records.extend(og_bad_records);
 
-    solve(&records, &bad_records, cache)
+    real_count_arrangements(&records, &bad_records)
 }
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
     let mut total = 0;
-    let mut cache = Cache::new();
-
     for line in input.lines() {
         let line = line.trim();
         println!("Solving {:?}...", line);
@@ -123,7 +126,7 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
         let records = chunks[0];
         let bad_groups = chunks[1].split(',').map(|s| s.parse().unwrap()).collect();
         let start = Instant::now();
-        total += count_arrangements(records, &bad_groups, &mut cache);
+        total += count_arrangements(records, &bad_groups);
         let duration = start.elapsed();
         println!("- Finished in: {:?}", duration);
         println!("- Current total: {}", total);
@@ -149,28 +152,15 @@ mod tests {
 
     #[test]
     fn test_count_arrangements() {
-        let mut cache = Cache::new();
-        assert_eq!(1, count_arrangements("???.###", &vec![1, 1, 3], &mut cache));
-        assert_eq!(
-            16384,
-            count_arrangements(".??..??...?##.", &vec![1, 1, 3], &mut cache)
-        );
-        assert_eq!(
-            1,
-            count_arrangements("?#?#?#?#?#?#?#?", &vec![1, 3, 1, 6], &mut cache)
-        );
-        assert_eq!(
-            16,
-            count_arrangements("????.#...#...", &vec![4, 1, 1], &mut cache)
-        );
+        assert_eq!(1, count_arrangements("???.###", &vec![1, 1, 3]));
+        assert_eq!(16384, count_arrangements(".??..??...?##.", &vec![1, 1, 3]));
+        assert_eq!(1, count_arrangements("?#?#?#?#?#?#?#?", &vec![1, 3, 1, 6]));
+        assert_eq!(16, count_arrangements("????.#...#...", &vec![4, 1, 1]));
         assert_eq!(
             2500,
-            count_arrangements("????.######..#####.", &vec![1, 6, 5], &mut cache)
+            count_arrangements("????.######..#####.", &vec![1, 6, 5])
         );
-        assert_eq!(
-            506250,
-            count_arrangements("?###????????", &vec![3, 2, 1], &mut cache)
-        );
+        assert_eq!(506250, count_arrangements("?###????????", &vec![3, 2, 1]));
     }
 
     #[test]
