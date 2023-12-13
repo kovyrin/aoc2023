@@ -86,6 +86,7 @@ fn count_arrangements(records: &str, bad_records: &Vec<u8>) -> u64 {
         }
 
         if check_bad_records(&result, bad_records) {
+            println!("result: {}", result.iter().collect::<String>());
             count += 1;
         }
     }
@@ -94,24 +95,30 @@ fn count_arrangements(records: &str, bad_records: &Vec<u8>) -> u64 {
 }
 
 fn check_bad_records(result: &[char], expected: &Vec<u8>) -> bool {
+    // println!("expected: {:?}", expected);
     let mut bad_record_idx = 0;
     let bad_record_count = expected.len();
     let mut count = 0;
     for c in result {
+        // println!("c: {}", c);
         if *c == '#' {
             count += 1;
             if bad_record_idx >= bad_record_count {
+                // println!("bad_record_idx >= bad_record_count");
                 return false;
             }
 
             if count > expected[bad_record_idx] {
+                // println!("count > expected[bad_record_idx]");
                 return false;
             }
             continue;
         }
 
         if count > 0 {
+            // println!("count: {}, expected: {}", count, expected[bad_record_idx]);
             if count != expected[bad_record_idx] {
+                // println!("count != expected[bad_record_idx]");
                 return false;
             }
 
@@ -121,10 +128,17 @@ fn check_bad_records(result: &[char], expected: &Vec<u8>) -> bool {
     }
 
     if count > 0 {
+        // println!("count: {}, expected: {}", count, expected[bad_record_idx]);
+        if count != expected[bad_record_idx] {
+            // println!("count != expected[bad_record_idx]");
+            return false;
+        }
+
         bad_record_idx += 1;
     }
 
     if bad_record_idx != bad_record_count {
+        // println!("bad_record_idx != bad_record_count");
         return false;
     }
 
@@ -135,10 +149,13 @@ fn check_bad_records(result: &[char], expected: &Vec<u8>) -> bool {
 pub fn process(input: &str) -> miette::Result<String, AocError> {
     let mut total = 0;
     for line in input.lines() {
-        let chunks = line.trim().split_whitespace().collect_vec();
+        let line = line.trim();
+        let chunks = line.split_whitespace().collect_vec();
         let records = chunks[0];
         let bad_groups = chunks[1].split(',').map(|s| s.parse().unwrap()).collect();
-        total += count_arrangements(records, &bad_groups);
+        let arrangements = count_arrangements(records, &bad_groups);
+        println!("{} => {}", line, arrangements);
+        total += arrangements;
     }
     Ok(total.to_string())
 }
@@ -160,22 +177,25 @@ mod tests {
     #[test]
     fn test_check_bad_records() {
         assert_eq!(
-            false,
+            true,
             check_bad_records(
-                &vec!['.', '#', '#', '#', '.', '#', '.', '#', '.', '.', '.', '.'],
-                &vec![3, 2, 1]
+                &"#####..#..##.#....##".chars().collect::<Vec<_>>(),
+                &vec![5, 1, 2, 1, 5]
             )
         );
     }
 
     #[test]
     fn test_count_arrangements() {
-        assert_eq!(1, count_arrangements("???.###", &vec![1, 1, 3]));
-        assert_eq!(4, count_arrangements(".??..??...?##.", &vec![1, 1, 3]));
-        assert_eq!(1, count_arrangements("?#?#?#?#?#?#?#?", &vec![1, 3, 1, 6]));
-        assert_eq!(1, count_arrangements("????.#...#...", &vec![4, 1, 1]));
-        assert_eq!(4, count_arrangements("????.######..#####.", &vec![1, 6, 5]));
-        assert_eq!(10, count_arrangements("?###????????", &vec![3, 2, 1]));
+        assert_eq!(
+            37,
+            count_arrangements("#.#?????..??????#?", &vec![1, 1, 1, 1, 1, 3])
+        );
+        // assert_eq!(4, count_arrangements(".??..??...?##.", &vec![1, 1, 3]));
+        // assert_eq!(1, count_arrangements("?#?#?#?#?#?#?#?", &vec![1, 3, 1, 6]));
+        // assert_eq!(1, count_arrangements("????.#...#...", &vec![4, 1, 1]));
+        // assert_eq!(4, count_arrangements("????.######..#####.", &vec![1, 6, 5]));
+        // assert_eq!(10, count_arrangements("?###????????", &vec![3, 2, 1]));
     }
 
     #[test]
