@@ -1,4 +1,7 @@
-use std::{collections::HashMap, ops::Sub};
+use std::{
+    collections::HashMap,
+    ops::{Range, Sub},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Direction {
@@ -114,7 +117,7 @@ pub struct CharRow {
 
 impl CharRow {
     pub fn from_str(input: &str, default: char) -> Self {
-        let row = input.trim().chars().collect::<Vec<char>>();
+        let row = input.chars().collect::<Vec<char>>();
         let width = row.len();
 
         Self {
@@ -137,6 +140,14 @@ impl CharRow {
             return &self.default;
         }
         &self.row[idx as usize]
+    }
+
+    pub fn slice(&self, range: &Range<i64>) -> Vec<char> {
+        let mut result = Vec::with_capacity(range.clone().count());
+        for idx in range.start..range.end {
+            result.push(*self.cell(idx));
+        }
+        result
     }
 }
 
@@ -161,21 +172,33 @@ impl CharMap {
         }
     }
 
-    pub fn from_str(input: &str, default: char) -> Self {
+    pub fn from_iter<T>(lines: impl Iterator<Item = T>, default: char) -> Self
+    where
+        T: AsRef<str>,
+    {
         let mut map = Vec::new();
-        for line in input.lines() {
-            map.push(CharRow::from_str(&line, default));
+        for line in lines {
+            map.push(CharRow::from_str(line.as_ref(), default));
         }
 
         let width = map[0].len();
+        assert!(width > 0);
+
         let height = map.len();
+        assert!(height > 0);
+
         let default_row = CharRow::from_str(&default.to_string().repeat(width), default);
+        assert!(default_row.len() == width);
 
         Self {
             map,
             height,
             default_row,
         }
+    }
+
+    pub fn from_str(input: &str, default: char) -> Self {
+        Self::from_iter(input.lines(), default)
     }
 
     pub fn with_padding(&self, x_padding: usize, y_padding: usize) -> Self {
@@ -322,5 +345,17 @@ impl CharMap {
                 self.set_cell(x, y, *cell);
             }
         }
+    }
+
+    pub fn transpose(&self) -> CharMap {
+        let mut new_map =
+            CharMap::from_dimensions(self.height(), self.width(), self.default_row.default);
+
+        for (y, line) in self.lines().enumerate() {
+            for (x, cell) in line.iter().enumerate() {
+                new_map.set_cell(y, x, *cell);
+            }
+        }
+        new_map
     }
 }
