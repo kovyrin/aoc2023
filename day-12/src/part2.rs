@@ -72,12 +72,14 @@ fn solve(spring_map: &str, bad_records: &[usize], cache: &mut Cache) -> u64 {
         skip_chars += 1; // account for the space
     }
 
-    let mut solution = if record_fits {
-        solve(&spring_map[skip_chars..], &bad_records[1..], cache)
-    } else {
-        0
+    let mut solution = 0;
+
+    // If the first record fits, go deeper
+    if record_fits {
+        solution = solve(&spring_map[skip_chars..], &bad_records[1..], cache)
     };
 
+    // Only attempt solution at the next position if it starts with an empty character
     if !spring_map.is_empty() {
         let next_char = spring_map.chars().next().unwrap();
         if next_char == '.' || next_char == '?' {
