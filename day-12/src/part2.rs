@@ -1,6 +1,6 @@
 use fxhash::{self, hash64};
 use itertools::Itertools;
-use std::{collections::HashMap, time::Instant};
+use std::collections::HashMap;
 
 use crate::custom_error::AocError;
 
@@ -98,11 +98,6 @@ fn can_fit_record(spring_map: &str, record_len: usize) -> bool {
         .all(|c| c == '#' || c == '?')
 }
 
-fn real_count_arrangements(records: &str, bad_records: &Vec<usize>) -> u64 {
-    let mut cache = Cache::new();
-    return solve(records, bad_records, &mut cache);
-}
-
 fn count_arrangements(records: &str, og_bad_records: &Vec<usize>) -> u64 {
     let records = format!(
         "{}?{}?{}?{}?{}",
@@ -115,24 +110,18 @@ fn count_arrangements(records: &str, og_bad_records: &Vec<usize>) -> u64 {
     bad_records.extend(og_bad_records);
     bad_records.extend(og_bad_records);
 
-    real_count_arrangements(&records, &bad_records)
+    let mut cache = Cache::new();
+    solve(&records, &bad_records, &mut cache)
 }
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
     let mut total = 0;
     for line in input.lines() {
-        let line = line.trim();
-        println!("Solving {:?}...", line);
-        let chunks = line.split_whitespace().collect_vec();
+        let chunks = line.trim().split_whitespace().collect_vec();
         let records = chunks[0];
         let bad_groups = chunks[1].split(',').map(|s| s.parse().unwrap()).collect();
-        let start = Instant::now();
         total += count_arrangements(records, &bad_groups);
-        let duration = start.elapsed();
-        println!("- Finished in: {:?}", duration);
-        println!("- Current total: {}", total);
-        println!();
     }
     Ok(total.to_string())
 }
