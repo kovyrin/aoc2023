@@ -1,5 +1,7 @@
 use std::{
     collections::HashMap,
+    hash::Hash,
+    hash::Hasher,
     ops::{Range, Sub},
 };
 
@@ -108,7 +110,7 @@ where
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CharRow {
     row: Vec<char>,
     width: usize,
@@ -153,7 +155,7 @@ impl CharRow {
 
 // A data structure representing a rectangular map where each cell is a char
 // It behaves like a 2D array, but allows out of bounds access (returns the default char)
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CharMap {
     map: Vec<CharRow>,
     height: usize,
@@ -197,6 +199,11 @@ impl CharMap {
         }
     }
 
+    pub fn from_str_with_trim(input: &str, default: char) -> Self {
+        let iter = input.lines().map(|line| line.trim());
+        Self::from_iter(iter, default)
+    }
+
     pub fn from_str(input: &str, default: char) -> Self {
         Self::from_iter(input.lines(), default)
     }
@@ -225,6 +232,10 @@ impl CharMap {
 
     pub fn lines(&self) -> impl Iterator<Item = &CharRow> {
         self.map.iter()
+    }
+
+    pub fn lines_mut(&mut self) -> impl IntoIterator<Item = &mut CharRow> {
+        self.map.iter_mut()
     }
 
     pub fn line(&self, idx: i64) -> &CharRow {
@@ -357,5 +368,27 @@ impl CharMap {
             }
         }
         new_map
+    }
+
+    pub fn flip_horizontal(&self) -> CharMap {
+        let mut new_map = self.clone();
+        for row in new_map.lines_mut() {
+            row.row.reverse();
+        }
+        new_map
+    }
+
+    pub fn rotate_left(&self) -> CharMap {
+        self.flip_horizontal().transpose()
+    }
+
+    pub fn rotate_right(&self) -> CharMap {
+        self.transpose().flip_horizontal()
+    }
+
+    pub fn hash64(&self) -> u64 {
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
     }
 }
