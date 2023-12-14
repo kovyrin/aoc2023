@@ -56,13 +56,12 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     for i in 1..=max_cycles {
         map = spin_cycle(&map);
         if seen.contains_key(&map.hash64()) {
-            println!(
-                "Found a cycle after {} spins! Cycle start: {}",
-                i,
-                seen[&map.hash64()]
-            );
             cycle_start = seen[&map.hash64()];
             cycle_len = i - cycle_start;
+            println!(
+                "Found a cycle after {} spins! Cycle start: {}",
+                i, cycle_start
+            );
             break;
         } else {
             seen.insert(map.hash64(), i);
