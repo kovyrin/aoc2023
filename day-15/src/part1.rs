@@ -30,6 +30,3 @@ mod tests {
         Ok(())
     }
 }
-
-// Submissions:
-// 513166 - too low
