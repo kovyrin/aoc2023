@@ -92,16 +92,42 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     let map = CharMap::from_str_with_trim(input, '#');
     map.print();
 
-    let start = Position {
-        point: Point::new(-1, 0),
-        direction: Direction::East,
-    };
-    let mut seen = HashSet::new();
-    let mut energized = HashSet::new();
+    // We will start on all borders facing inwards and see which one leads to the most energized map
+    let mut starts = Vec::new();
+    for col in 0..map.width() {
+        starts.push(Position {
+            point: Point::new(col as i64, -1),
+            direction: Direction::South,
+        });
+        starts.push(Position {
+            point: Point::new(col as i64, map.height() as i64),
+            direction: Direction::North,
+        });
+    }
+    for row in 0..map.height() {
+        starts.push(Position {
+            point: Point::new(-1, row as i64),
+            direction: Direction::East,
+        });
+        starts.push(Position {
+            point: Point::new(map.width() as i64, row as i64),
+            direction: Direction::West,
+        });
+    }
 
-    simulate(&map, start, &mut seen, &mut energized);
+    let mut max_energized = 0;
+    for start in starts {
+        let mut seen = HashSet::new();
+        let mut energized = HashSet::new();
 
-    Ok((energized.iter().count() - 1).to_string())
+        simulate(&map, start, &mut seen, &mut energized);
+
+        if energized.len() > max_energized {
+            max_energized = energized.len();
+        }
+    }
+
+    Ok((max_energized - 1).to_string())
 }
 
 #[cfg(test)]
@@ -120,7 +146,7 @@ mod tests {
                        .-.-/..|..
                        .|....-|.\
                        ..//.|...."#;
-        assert_eq!("46", process(input)?);
+        assert_eq!("51", process(input)?);
         Ok(())
     }
 }
