@@ -253,6 +253,22 @@ impl CharMap {
         self.height
     }
 
+    pub fn top_left(&self) -> Point<i64> {
+        Point::new(0, 0)
+    }
+
+    pub fn top_right(&self) -> Point<i64> {
+        Point::new(self.width() as i64 - 1, 0)
+    }
+
+    pub fn bottom_left(&self) -> Point<i64> {
+        Point::new(0, self.height() as i64 - 1)
+    }
+
+    pub fn bottom_right(&self) -> Point<i64> {
+        Point::new(self.width() as i64 - 1, self.height() as i64 - 1)
+    }
+
     pub fn lines(&self) -> impl Iterator<Item = &CharRow> {
         self.map.iter()
     }
@@ -281,6 +297,11 @@ impl CharMap {
 
     pub fn cell_for_point(&self, point: &Point<i64>) -> &char {
         self.cell(point.x, point.y)
+    }
+
+    pub fn cell_digit_for_point(&self, point: &Point<i64>) -> i64 {
+        let cell = self.cell_for_point(point);
+        (*cell as i64) - ('0' as i64)
     }
 
     pub fn set_cell_for_point(&mut self, point: &Point<i64>, value: char) {
