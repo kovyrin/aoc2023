@@ -1,104 +1,172 @@
-use std::{collections::HashMap, i64::MAX};
+use std::collections::HashMap;
 use tracing::{debug, info, warn};
 
 use crate::{
     custom_error::AocError,
-    utils::{CharMap, Direction, Point},
+    utils::Direction::{self, *},
+    utils::{CharMap, Point},
 };
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+struct Step {
+    pos: Point<i64>,
+    dir: Direction,
+    steps: usize,
+}
 
 fn find_min_loss(
     map: &CharMap,
-    min_loss: &mut HashMap<Point<i64>, i64>,
+    min_loss: &mut HashMap<Step, i64>,
+    best_total_loss: &mut i64,
     total_loss: i64,
-    cur_pos: Point<i64>,
-    cur_dir: Direction,
-    steps_in_dir: usize,
+    current: Step,
 ) {
     debug!(
         "Visiting {:?} with loss {} and direction {:?}",
-        cur_pos, total_loss, cur_dir
+        current.pos, total_loss, current.dir
     );
 
     // Cannot take more than 3 steps in the same direction
-    if steps_in_dir > 3 {
+    if current.steps > 3 {
         debug!("- Cannot take more than 3 steps in the same direction");
         return;
     }
 
     // Cannot go out of bounds
-    if map.out_of_bounds(&cur_pos) {
+    if map.out_of_bounds(&current.pos) {
         debug!("- Cannot go out of bounds");
         return;
     }
 
     // Calculate the loss for the current path (including the current block)
-    let current_block_loss = map.cell_digit_for_point(&cur_pos);
+    let current_block_loss = map.cell_digit_for_point(&current.pos);
     let total_loss = total_loss + current_block_loss;
+    debug!(
+        "* Current block loss is {}, total loss is {}",
+        current_block_loss, total_loss
+    );
 
-    // Check min loss for the current position
-    let finish = map.bottom_right();
-    if let Some(previous_min) = min_loss.get(&cur_pos) {
-        if total_loss >= *previous_min {
-            debug!("We have already been here, but with a lower loss");
-            return;
-        }
-
-        if let Some(finish_loss) = min_loss.get(&finish) {
-            if total_loss >= *finish_loss {
-                debug!("We already have a better solution");
-                return;
-            }
-        }
+    // Check against the current known best total loss
+    if total_loss >= *best_total_loss {
+        debug!("- Worse than the best solution: {}", best_total_loss);
+        return;
     }
 
-    // Update min loss for the current position
-    min_loss.insert(cur_pos, total_loss);
+    // Check min loss for the current position
+    if let Some(previous_min) = min_loss.get(&current) {
+        debug!("* Best loss for this point: {}", previous_min);
+        if total_loss >= *previous_min {
+            debug!("- We have already been here, but with the same or lower loss");
+            return;
+        } else {
+            debug!("+ This is better for {:?}!", current.pos);
+        }
+    } else {
+        debug!("* First time here");
+    }
+
+    min_loss.insert(current, total_loss);
 
     // Check if we reached the end
-    if cur_pos == finish {
-        info!("+ Reached the end with loss {}", total_loss);
+    if current.pos == map.bottom_right() {
+        if total_loss < *best_total_loss {
+            info!("+ Reached the end with a new best: {}", total_loss);
+            *best_total_loss = total_loss;
+        }
         return;
     }
 
     // Now try going forward, left and right
-    debug!("+ Going forward");
-    let next_pos = cur_pos + cur_dir.delta();
-    let steps_in_dir = steps_in_dir + 1;
-    find_min_loss(map, min_loss, total_loss, next_pos, cur_dir, steps_in_dir);
+    debug!("+ Going forward from {:?}", current.pos);
+    let next = Step {
+        dir: current.dir,
+        pos: current.pos + current.dir.delta(),
+        steps: current.steps + 1,
+    };
+    find_min_loss(map, min_loss, best_total_loss, total_loss, next);
 
-    debug!("+ Going left");
-    let next_dir = cur_dir.turn_left();
-    let next_pos = cur_pos + next_dir.delta();
-    find_min_loss(map, min_loss, total_loss, next_pos, next_dir, 1);
+    debug!("+ Going left from {:?}", current.pos);
+    let next = Step {
+        dir: current.dir.turn_left(),
+        pos: current.pos + current.dir.turn_left().delta(),
+        steps: 1,
+    };
+    find_min_loss(map, min_loss, best_total_loss, total_loss, next);
 
-    debug!("+ Going right");
-    let next_dir = cur_dir.turn_right();
-    let next_pos = cur_pos + next_dir.delta();
-    find_min_loss(map, min_loss, total_loss, next_pos, next_dir, 1);
+    debug!("+ Going right from {:?}", current.pos);
+    let next = Step {
+        dir: current.dir.turn_right(),
+        pos: current.pos + current.dir.turn_right().delta(),
+        steps: 1,
+    };
+    find_min_loss(map, min_loss, best_total_loss, total_loss, next);
 }
 
 #[tracing::instrument(skip(input))]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
     let map = CharMap::from_str_with_trim(input, '#');
 
-    let mut min_loss = HashMap::new();
-    let start = map.top_left();
+    let mut best_total_loss = std::i64::MAX;
+    let mut min_loss_per_step = HashMap::new();
 
-    // Start by going east
-    min_loss.insert(start, MAX);
-    find_min_loss(&map, &mut min_loss, 0, start, Direction::East, 0);
+    // Go east
+    find_min_loss(
+        &map,
+        &mut min_loss_per_step,
+        &mut best_total_loss,
+        0,
+        Step {
+            pos: Point::new(1, 0),
+            dir: East,
+            steps: 1,
+        },
+    );
+    // debug_min_loss(&map, &min_loss, &best_path);
 
-    // Then go south
-    min_loss.insert(start, MAX);
-    find_min_loss(&map, &mut min_loss, 0, start, Direction::South, 0);
+    // Go south
+    find_min_loss(
+        &map,
+        &mut min_loss_per_step,
+        &mut best_total_loss,
+        0,
+        Step {
+            pos: Point::new(0, 1),
+            dir: Direction::South,
+            steps: 1,
+        },
+    );
+    // debug_min_loss(&map, &min_loss, &best_path);
 
-    // Since we should not count the loss from the first block, we need to subtract it
-    let starting_loss = map.cell_digit_for_point(&start);
-    let finish = map.bottom_right();
-    let finishing_loss = min_loss[&finish];
-    let result = finishing_loss - starting_loss;
+    Ok(best_total_loss.to_string())
+}
 
-    Ok(result.to_string())
+fn debug_min_loss(map: &CharMap, min_loss: &HashMap<Point<i64>, i64>, best_path: &Vec<Step>) {
+    println!("Map:");
+    map.print();
+
+    println!("Path:");
+    println!("{:?}", best_path);
+    for row in 0..map.height() {
+        for col in 0..map.width() {
+            let pos = Point::new(col as i64, row as i64);
+            let path_step = best_path.iter().find(|s| s.pos == pos);
+            if let Some(step) = path_step {
+                print!("{}", step.dir.to_char());
+            } else {
+                print!("{}", map.cell_for_point(&pos));
+            }
+        }
+        println!();
+    }
+
+    println!("Min loss map:");
+    for row in 0..map.height() {
+        for col in 0..map.width() {
+            let pos = Point::new(col as i64, row as i64);
+            print!("{:4} ", min_loss.get(&pos).unwrap_or(&0));
+        }
+        println!();
+    }
 }
 
 #[cfg(test)]
@@ -107,6 +175,8 @@ mod tests {
 
     #[test]
     fn test_process() -> miette::Result<()> {
+        tracing_subscriber::fmt::init();
+
         let input = "2413432311323
                      3215453535623
                      3255245654254
@@ -127,6 +197,7 @@ mod tests {
 
 // Submissions:
 // 2203 - too high
+// 1185 - too high
 // 1183 - too high
-// ...
+// 1155 - correct!
 // 1132 - too low

@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    fmt::Formatter,
     hash::Hash,
     hash::Hasher,
     ops::{Range, Sub},
@@ -54,7 +55,7 @@ impl Direction {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Point<T> {
     pub x: T,
     pub y: T,
@@ -130,6 +131,24 @@ where
             x: self.x + other.x,
             y: self.y + other.y,
         }
+    }
+}
+
+impl<T> std::fmt::Display for Point<T>
+where
+    T: std::fmt::Display,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({},{})", self.x, self.y)
+    }
+}
+
+impl<T> std::fmt::Debug for Point<T>
+where
+    T: std::fmt::Display,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({},{})", self.x, self.y)
     }
 }
 
