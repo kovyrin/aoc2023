@@ -75,6 +75,7 @@ fn corner_area(directions: &[Direction]) -> i64 {
     return sum as i64;
 }
 
+// Shoelace formula (aka Gauss's area formula)
 fn polygon_area(vertices: &[Point<i64>]) -> i64 {
     let mut area = 0;
 
