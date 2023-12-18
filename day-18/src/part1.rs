@@ -18,10 +18,7 @@ impl Dig {
         let map_size = 10000;
         let mut dig = Self {
             map: CharMap::from_dimensions(map_size, map_size, '.'),
-            pos: Point::new(
-                (map_size / 2).try_into().unwrap(),
-                (map_size / 2).try_into().unwrap(),
-            ),
+            pos: Point::new(0, 0),
             max_x: 0,
             max_y: 0,
         };
@@ -52,6 +49,7 @@ impl Dig {
                 self.max_y = self.pos.y;
             }
 
+            println!("Point::new({},{})", self.pos.x, self.pos.y);
             self.map
                 .set_cell(self.pos.x as usize, self.pos.y as usize, '#');
         }
@@ -68,12 +66,12 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
         let steps = parts[1].parse::<i64>().unwrap();
         let color = parts[2].trim_start_matches('(').trim_end_matches(')');
 
-        println!("{} {} {}", dir, steps, color);
+        // println!("{} {} {}", dir, steps, color);
         dig.dig(dir, steps, color);
     }
 
-    println!("Max x: {}", dig.max_x);
-    println!("Max y: {}", dig.max_y);
+    // println!("Max x: {}", dig.max_x);
+    // println!("Max y: {}", dig.max_y);
 
     // dig.map.print();
     let mut count = dig.map.count('#');

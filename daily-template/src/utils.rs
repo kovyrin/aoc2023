@@ -105,6 +105,14 @@ where
         result
     }
 
+    pub fn neighbours_list(&self) -> Vec<Self> {
+        let mut result = Vec::with_capacity(4);
+        for dir in Direction::each() {
+            result.push(self.neighbour(dir));
+        }
+        result
+    }
+
     pub fn direction_to(&self, other: &Self) -> Direction {
         if self.x == other.x {
             if self.y < other.y {
@@ -384,7 +392,7 @@ impl CharMap {
         while let Some(point) = stack.pop() {
             self.set_cell_for_point(&point, fill_with);
 
-            for (_, neighbour) in point.neighbours() {
+            for neighbour in point.neighbours_list() {
                 if self.out_of_bounds(&neighbour) {
                     continue;
                 }
