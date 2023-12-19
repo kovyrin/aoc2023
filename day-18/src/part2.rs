@@ -28,12 +28,17 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
         directions.push(dir);
     }
 
-    let corner_count = directions.len() as i64;
-    let area = polygon_area(&vertices);
-    let corner_area = corner_area(&directions);
-    let perimeter_without_corners = perimeter - corner_count;
+    let shoelace_area = polygon_area(&vertices);
 
-    let result = area + (perimeter_without_corners / 2) + (corner_count - corner_area);
+    // Manual solution on top of shoelace formula:
+    // let corner_area = corner_area(&directions);
+    // let corner_count = directions.len() as i64;
+    // let perimeter_without_corners = perimeter - corner_count;
+    // let result = shoelace_area + (perimeter_without_corners / 2) + (corner_count - corner_area);
+
+    // Pick's theorem solution: https://en.wikipedia.org/wiki/Pick%27s_theorem
+    let result = shoelace_area + perimeter / 2 + 1;
+
     Ok(result.to_string())
 }
 
@@ -75,7 +80,7 @@ fn corner_area(directions: &[Direction]) -> i64 {
     return sum as i64;
 }
 
-// Shoelace formula (aka Gauss's area formula)
+// Shoelace formula (aka Gauss's area formula): https://en.wikipedia.org/wiki/Shoelace_formula
 fn polygon_area(vertices: &[Point<i64>]) -> i64 {
     let mut area = 0;
 
