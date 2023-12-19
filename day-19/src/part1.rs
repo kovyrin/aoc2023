@@ -4,27 +4,10 @@ use std::collections::HashMap;
 use crate::custom_error::AocError;
 
 #[derive(Debug)]
-enum Operator {
-    LessThan,
-    GreaterThan,
-    Equal,
-}
-impl Operator {
-    fn from_char(unwrap: char) -> Self {
-        match unwrap {
-            '<' => Self::LessThan,
-            '>' => Self::GreaterThan,
-            '=' => Self::Equal,
-            _ => panic!("Invalid operator"),
-        }
-    }
-}
-
-#[derive(Debug)]
 enum Rule {
     Condition {
         dim: char,
-        op: Operator,
+        op: char,
         value: i64,
         dest: String,
     },
@@ -42,7 +25,7 @@ impl Rule {
         let cond = parts.next().unwrap();
         let dest = parts.last().unwrap().to_string();
         let dimension = cond.chars().nth(0).unwrap();
-        let op = Operator::from_char(cond.chars().nth(1).unwrap());
+        let op = cond.chars().nth(1).unwrap();
         let value = cond[2..].parse::<i64>().unwrap();
 
         Self::Condition {
@@ -59,9 +42,10 @@ impl Rule {
             Self::Condition { dim, op, value, .. } => {
                 let part_value = part.dimensions.get(dim).unwrap();
                 match op {
-                    Operator::LessThan => part_value < value,
-                    Operator::GreaterThan => part_value > value,
-                    Operator::Equal => part_value == value,
+                    '<' => part_value < value,
+                    '>' => part_value > value,
+                    '=' => part_value == value,
+                    _ => panic!("Unknown operator {}", op),
                 }
             }
         }
