@@ -36,6 +36,12 @@ impl Rule {
         }
     }
 
+    fn dest(&self) -> String {
+        match self {
+            Self::Move(dest) | Self::Condition { dest, .. } => dest.clone(),
+        }
+    }
+
     fn matches(&self, part: &Part) -> bool {
         match self {
             Self::Move { .. } => true,
@@ -44,7 +50,6 @@ impl Rule {
                 match op {
                     '<' => part_value < value,
                     '>' => part_value > value,
-                    '=' => part_value == value,
                     _ => panic!("Unknown operator {}", op),
                 }
             }
@@ -79,7 +84,7 @@ impl Workflow {
         }
 
         panic!(
-            "No matching rule found for part {} in workflow {:?}",
+            "No matching rule found for part {:?} in workflow {:?}",
             part, self.name
         );
     }
@@ -114,19 +119,6 @@ impl Part {
     }
 }
 
-impl std::fmt::Display for Part {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{{x={},m={},a={},s={}}}",
-            self.dimensions[&'x'],
-            self.dimensions[&'m'],
-            self.dimensions[&'a'],
-            self.dimensions[&'s']
-        )
-    }
-}
-
 struct System {
     workflows: Vec<String>,
     workflow_map: HashMap<String, Workflow>,
@@ -144,11 +136,7 @@ impl System {
         let mut cur_name = "in".to_string();
         loop {
             let workflow = self.workflow_map.get(&cur_name).unwrap();
-            match workflow.process(part) {
-                Rule::Move(dest) | Rule::Condition { dest, .. } => {
-                    cur_name = dest.clone();
-                }
-            }
+            cur_name = workflow.process(part).dest();
 
             if cur_name == "A" {
                 return true;
