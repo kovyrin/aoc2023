@@ -412,6 +412,7 @@ version = "0.1.0"
 dependencies = [
  "dhat",
  "divan",
+ "fxhash",
  "itertools",
  "miette",
  "nom",

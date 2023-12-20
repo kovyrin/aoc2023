@@ -278,6 +278,42 @@ mod tests {
                      &con -> output";
         assert_eq!("11687500", process(input).unwrap());
     }
+
+    #[test]
+    fn test_single_and() {
+        let mut node = ConjunctNode::new("and", vec!["output".to_string()]);
+        node.set_incoming(&vec!["a".to_string()]);
+
+        let high = Signal {
+            src: "a".to_string(),
+            dst: "and".to_string(),
+            signal_type: SignalType::High,
+        };
+
+        let low = Signal {
+            src: "a".to_string(),
+            dst: "and".to_string(),
+            signal_type: SignalType::Low,
+        };
+
+        let res = node.process_signal(&low);
+        println!("{:?}", res);
+
+        let res = node.process_signal(&low);
+        println!("{:?}", res);
+
+        let res = node.process_signal(&low);
+        println!("{:?}", res);
+
+        let res = node.process_signal(&high);
+        println!("{:?}", res);
+
+        let res = node.process_signal(&high);
+        println!("{:?}", res);
+
+        let res = node.process_signal(&high);
+        println!("{:?}", res);
+    }
 }
 
 // Submissions:

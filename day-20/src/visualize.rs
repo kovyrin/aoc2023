@@ -1,6 +1,4 @@
-use std::collections::VecDeque;
-
-use fxhash::FxHashMap;
+use std::collections::HashMap;
 
 use crate::custom_error::AocError;
 
@@ -8,6 +6,15 @@ use crate::custom_error::AocError;
 enum SignalType {
     High,
     Low,
+}
+
+impl std::fmt::Display for SignalType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SignalType::High => write!(f, "high"),
+            SignalType::Low => write!(f, "low"),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -38,6 +45,7 @@ trait Node {
     fn out_conns(&self) -> &[String];
     fn set_incoming(&mut self, incoming: &Vec<String>);
     fn process_signal(&mut self, signal: &Signal) -> Vec<Signal>;
+    fn type_char(&self) -> char;
 }
 
 //-----------------------------------------------------------------------------
@@ -56,6 +64,10 @@ impl BroadcastNode {
 }
 
 impl Node for BroadcastNode {
+    fn type_char(&self) -> char {
+        '#'
+    }
+
     fn name(&self) -> &str {
         &self.name
     }
@@ -90,6 +102,10 @@ impl FlipFlopNode {
 }
 
 impl Node for FlipFlopNode {
+    fn type_char(&self) -> char {
+        '%'
+    }
+
     fn name(&self) -> &str {
         &self.name
     }
@@ -121,7 +137,7 @@ impl Node for FlipFlopNode {
 struct ConjunctNode {
     name: String,
     out_conns: Vec<String>,
-    in_state: FxHashMap<String, bool>,
+    in_state: HashMap<String, bool>,
 }
 
 impl ConjunctNode {
@@ -129,12 +145,16 @@ impl ConjunctNode {
         Self {
             name: name.to_string(),
             out_conns: conns,
-            in_state: FxHashMap::default(),
+            in_state: HashMap::new(),
         }
     }
 }
 
 impl Node for ConjunctNode {
+    fn type_char(&self) -> char {
+        '&'
+    }
+
     fn name(&self) -> &str {
         &self.name
     }
@@ -166,14 +186,13 @@ impl Node for ConjunctNode {
 type BoxedNode = Box<dyn Node>;
 
 struct Network {
-    nodes: FxHashMap<String, BoxedNode>,
-    pulse_counts: FxHashMap<SignalType, u64>,
+    nodes: HashMap<String, BoxedNode>,
 }
 
 impl Network {
     fn from_str(s: &str) -> Self {
-        let mut nodes: FxHashMap<String, BoxedNode> = FxHashMap::default();
-        let mut in_conns: FxHashMap<String, Vec<String>> = FxHashMap::default();
+        let mut nodes: HashMap<String, BoxedNode> = HashMap::new();
+        let mut in_conns: HashMap<String, Vec<String>> = HashMap::new();
         for line in s.lines() {
             let node = Self::node_from_str(line.trim());
             for conn in node.out_conns() {
@@ -190,10 +209,7 @@ impl Network {
             node.set_incoming(&incoming_conns);
         }
 
-        Self {
-            nodes,
-            pulse_counts: FxHashMap::default(),
-        }
+        Self { nodes }
     }
 
     fn node_from_str(s: &str) -> BoxedNode {
@@ -210,79 +226,40 @@ impl Network {
             _ => Box::new(BroadcastNode::new(&name_with_type, conns)),
         }
     }
-
-    // Simulates a single pulse sent through the network, starting at the broadcaster module.
-    fn press_button(&mut self) -> bool {
-        let mut signal_queue = VecDeque::new();
-        signal_queue.push_back(Signal {
-            src: "button".to_string(),
-            dst: "broadcaster".to_string(),
-            signal_type: SignalType::Low,
-        });
-
-        while let Some(signal) = signal_queue.pop_front() {
-            self.pulse_counts
-                .entry(signal.signal_type)
-                .and_modify(|c| *c += 1)
-                .or_insert(1);
-
-            if signal.dst == "rx" && signal.signal_type == SignalType::Low {
-                println!("Reached rx with low signal!");
-                return true;
-            }
-
-            if let Some(dst_node) = self.nodes.get_mut(&signal.dst) {
-                let outgoing_signals = dst_node.process_signal(&signal);
-                signal_queue.extend(outgoing_signals);
-            }
-        }
-
-        return false;
-    }
 }
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
-    let mut net = Network::from_str(input);
+    let net = Network::from_str(input);
 
-    let mut presses = 0u128;
-    loop {
-        presses += 1;
-        if presses % 1000000 == 0 {
-            println!("Presses: {}", presses);
+    println!("strict digraph {{");
+
+    for node in net.nodes.values() {
+        let mut attrs = vec![
+            format!("label=\"{} {}\"", node.type_char(), node.name()),
+            format!("shape=box"),
+        ];
+
+        if node.name() == "rx" {
+            attrs.push(format!("rank=max"));
+        } else if node.name() == "broadcaster" {
+            attrs.push(format!("rank=min"));
+        };
+
+        println!(
+            " {} [{}];",
+            node.name(),
+            attrs.iter().map(|s| format!("{} ", s)).collect::<String>()
+        );
+    }
+
+    for node in net.nodes.values() {
+        for conn in node.out_conns() {
+            println!(" {} -> {};", node.name(), conn);
         }
-
-        if net.press_button() {
-            println!("Reached rx with low signal after {} presses", presses);
-            break;
-        }
     }
 
-    Ok(presses.to_string())
-}
+    println!("}}");
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_process() -> miette::Result<()> {
-        let input = "broadcaster -> a, b, c
-                     %a -> b
-                     %b -> c
-                     %c -> inv
-                     &inv -> a";
-        assert_eq!("32000000", process(input)?);
-        Ok(())
-    }
-
-    #[test]
-    fn test_process_harder() {
-        let input = "broadcaster -> a
-                     %a -> inv, con
-                     &inv -> b
-                     %b -> con
-                     &con -> output";
-        assert_eq!("11687500", process(input).unwrap());
-    }
+    Ok("".to_string())
 }
