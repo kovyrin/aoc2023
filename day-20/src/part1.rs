@@ -25,20 +25,17 @@ struct Signal {
 }
 
 impl Signal {
-    fn forward(&self, conn: &str) -> Self {
-        Self {
-            src: self.dst.clone(),
-            dst: conn.to_string(),
-            signal_type: self.signal_type,
-        }
-    }
-
     fn send(&self, conn: &str, signal_type: SignalType) -> Self {
         Self {
             src: self.dst.clone(),
             dst: conn.to_string(),
             signal_type,
         }
+    }
+
+    fn broadcast(&self, conns: &[String], new_type: Option<SignalType>) -> Vec<Self> {
+        let new_type = new_type.unwrap_or(self.signal_type);
+        conns.iter().map(|conn| self.send(conn, new_type)).collect()
     }
 }
 
@@ -77,10 +74,7 @@ impl Node for BroadcastNode {
     fn set_incoming(&mut self, _: &Vec<String>) {}
 
     fn process_signal(&mut self, signal: &Signal) -> Vec<Signal> {
-        self.out_conns
-            .iter()
-            .map(|conn| signal.forward(conn))
-            .collect()
+        signal.broadcast(&self.out_conns, None)
     }
 }
 
@@ -118,16 +112,14 @@ impl Node for FlipFlopNode {
             return vec![];
         }
 
-        self.on = !self.on;
-        let new_pulse = if self.on {
-            SignalType::High
-        } else {
+        let out_signal = if self.on {
             SignalType::Low
+        } else {
+            SignalType::High
         };
-        self.out_conns
-            .iter()
-            .map(|conn| signal.send(conn, new_pulse))
-            .collect()
+        self.on = !self.on;
+
+        signal.broadcast(&self.out_conns, Some(out_signal))
     }
 }
 
@@ -166,7 +158,7 @@ impl Node for ConjunctNode {
 
     fn process_signal(&mut self, signal: &Signal) -> Vec<Signal> {
         let state_for_input = self.in_state.get_mut(&signal.src).unwrap();
-        *state_for_input = !*state_for_input;
+        *state_for_input = signal.signal_type == SignalType::High;
 
         let out_signal = if self.in_state.values().all(|v| *v) {
             SignalType::Low
@@ -174,10 +166,7 @@ impl Node for ConjunctNode {
             SignalType::High
         };
 
-        self.out_conns
-            .iter()
-            .map(|conn| signal.send(conn, out_signal))
-            .collect()
+        signal.broadcast(&self.out_conns, Some(out_signal))
     }
 }
 
@@ -243,7 +232,6 @@ impl Network {
         });
 
         while let Some(signal) = signal_queue.pop_front() {
-            println!("{} -{}-> {}", signal.src, signal.signal_type, signal.dst);
             self.pulse_counts
                 .entry(signal.signal_type)
                 .and_modify(|c| *c += 1)
@@ -251,10 +239,7 @@ impl Network {
 
             if let Some(dst_node) = self.nodes.get_mut(&signal.dst) {
                 let outgoing_signals = dst_node.process_signal(&signal);
-                // println!("Outgoing signals: {:?}", outgoing_signals);
                 signal_queue.extend(outgoing_signals);
-            } else {
-                // println!("Signal sent to an untyped node {}, dropping it", signal.dst);
             }
         }
     }
@@ -263,13 +248,9 @@ impl Network {
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
     let mut net = Network::from_str(input);
-
     for _ in 0..1000 {
-        println!("------------------------------------");
         net.press_button();
     }
-
-    println!("------------------------------------");
     Ok(net.score().to_string())
 }
 
@@ -303,4 +284,4 @@ mod tests {
 // 672744417 - too low
 // 697264874 - too low
 // 697264974 - too low
-// ...
+// 739960225 - correct
