@@ -1,6 +1,5 @@
-use std::collections::{HashMap, VecDeque};
-
 use fxhash::FxHashMap;
+use std::collections::{HashMap, VecDeque};
 
 use crate::custom_error::AocError;
 
@@ -36,7 +35,7 @@ impl Signal {
 trait Node {
     fn name(&self) -> &str;
     fn out_conns(&self) -> &[String];
-    fn set_incoming(&mut self, incoming: &Vec<String>);
+    fn set_incoming(&mut self, _: &Vec<String>) {}
     fn process_signal(&mut self, signal: &Signal) -> Vec<Signal>;
 }
 
@@ -63,8 +62,6 @@ impl Node for BroadcastNode {
     fn out_conns(&self) -> &[String] {
         &self.out_conns
     }
-
-    fn set_incoming(&mut self, _: &Vec<String>) {}
 
     fn process_signal(&mut self, signal: &Signal) -> Vec<Signal> {
         signal.broadcast(&self.out_conns, None)
@@ -97,8 +94,6 @@ impl Node for FlipFlopNode {
     fn out_conns(&self) -> &[String] {
         &self.out_conns
     }
-
-    fn set_incoming(&mut self, _: &Vec<String>) {}
 
     fn process_signal(&mut self, signal: &Signal) -> Vec<Signal> {
         if signal.signal_type == SignalType::High {
