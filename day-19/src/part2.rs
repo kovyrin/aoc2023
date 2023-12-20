@@ -48,8 +48,7 @@ impl Rule {
             Self::Condition { op, value, .. } => match op {
                 '<' => 1..*value,
                 '>' => *value + 1..4001,
-                '=' => *value..*value + 1,
-                _ => panic!("Unknown operator {}", op),
+                _ => panic!("Unknown operator {} for {:?}", op, self),
             },
         }
     }
@@ -120,35 +119,29 @@ struct PartRange {
 impl PartRange {
     fn full() -> Self {
         let mut dimensions = HashMap::new();
-        let min = 1;
-        let max = 4001 as u128;
-        dimensions.insert('x', min..max);
-        dimensions.insert('m', min..max);
-        dimensions.insert('a', min..max);
-        dimensions.insert('s', min..max);
-
+        for dim in ['x', 'm', 'a', 's'] {
+            dimensions.insert(dim, 1..4001 as u128);
+        }
         Self { dimensions }
     }
 
     fn size(&self) -> u128 {
-        let mut size = 1u128;
-        for range in self.dimensions.values() {
-            size *= range.end - range.start;
-        }
-        return size;
+        self.dimensions.values().map(|r| r.end - r.start).product()
     }
 
     fn exclude(&self, other: Self) -> Self {
         let mut dimensions = HashMap::new();
-        for (dim, range) in self.dimensions.iter() {
+        for (dim, range) in &self.dimensions {
             let other_range = other.dimensions.get(dim).unwrap();
             let mut new_range = range.clone();
+
             if other_range.start > range.start {
                 new_range.end = other_range.start;
             }
             if other_range.end < range.end {
                 new_range.start = other_range.end;
             }
+
             dimensions.insert(*dim, new_range);
         }
         Self { dimensions }
@@ -180,17 +173,10 @@ impl System {
 
         let workflow = self.workflow_map.get(name).unwrap();
         let mut supported = 0u128;
-
         for rule in &workflow.rules {
             if let Some(supported_range) = rule.supported_range(&part_range) {
                 supported += self.supported_by_workflow(&rule.dest(), &supported_range);
-
-                // Now that we have handled part of the range, the all future rules
-                // will be applied to the remaining range.
                 part_range = part_range.exclude(supported_range);
-                if part_range.size() == 0 {
-                    break;
-                }
             }
         }
 
@@ -238,11 +224,6 @@ mod tests {
         let part_range = PartRange::full();
         let supported_range = rule.supported_range(&part_range).unwrap();
         assert_eq!(2007..4001, *supported_range.dimensions.get(&'a').unwrap());
-
-        let rule = Rule::from_str("a=2006:qkq");
-        let part_range = PartRange::full();
-        let supported_range = rule.supported_range(&part_range).unwrap();
-        assert_eq!(2006..2007, *supported_range.dimensions.get(&'a').unwrap());
     }
 
     #[test]
