@@ -8,12 +8,22 @@ enum SignalType {
     Low,
 }
 
+impl std::fmt::Display for SignalType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SignalType::High => write!(f, "high"),
+            SignalType::Low => write!(f, "low"),
+        }
+    }
+}
+
 #[derive(Debug)]
 struct Signal {
     src: String,
     dst: String,
     signal_type: SignalType,
 }
+
 impl Signal {
     fn forward(&self, conn: &str) -> Self {
         Self {
@@ -110,9 +120,9 @@ impl Node for FlipFlopNode {
 
         self.on = !self.on;
         let new_pulse = if self.on {
-            SignalType::Low
-        } else {
             SignalType::High
+        } else {
+            SignalType::Low
         };
         self.out_conns
             .iter()
@@ -157,6 +167,7 @@ impl Node for ConjunctNode {
     fn process_signal(&mut self, signal: &Signal) -> Vec<Signal> {
         let state_for_input = self.in_state.get_mut(&signal.src).unwrap();
         *state_for_input = !*state_for_input;
+
         let out_signal = if self.in_state.values().all(|v| *v) {
             SignalType::Low
         } else {
@@ -232,7 +243,7 @@ impl Network {
         });
 
         while let Some(signal) = signal_queue.pop_front() {
-            println!("Processing {:?}", signal);
+            println!("{} -{}-> {}", signal.src, signal.signal_type, signal.dst);
             self.pulse_counts
                 .entry(signal.signal_type)
                 .and_modify(|c| *c += 1)
@@ -240,10 +251,10 @@ impl Network {
 
             if let Some(dst_node) = self.nodes.get_mut(&signal.dst) {
                 let outgoing_signals = dst_node.process_signal(&signal);
-                println!("Outgoing signals: {:?}", outgoing_signals);
+                // println!("Outgoing signals: {:?}", outgoing_signals);
                 signal_queue.extend(outgoing_signals);
             } else {
-                println!("Signal sent to an untyped node {}, dropping it", signal.dst);
+                // println!("Signal sent to an untyped node {}, dropping it", signal.dst);
             }
         }
     }
@@ -254,9 +265,11 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     let mut net = Network::from_str(input);
 
     for _ in 0..1000 {
+        println!("------------------------------------");
         net.press_button();
     }
 
+    println!("------------------------------------");
     Ok(net.score().to_string())
 }
 
@@ -287,4 +300,7 @@ mod tests {
 }
 
 // Submissions:
+// 672744417 - too low
 // 697264874 - too low
+// 697264974 - too low
+// ...
