@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
 use fxhash::FxHashMap;
 
@@ -212,7 +212,7 @@ impl Network {
     }
 
     // Simulates a single pulse sent through the network, starting at the broadcaster module.
-    fn press_button(&mut self) -> bool {
+    fn press_button_and_measure(&mut self, probe_names: &Vec<&str>) -> Vec<String> {
         let mut signal_queue = VecDeque::new();
         signal_queue.push_back(Signal {
             src: "button".to_string(),
@@ -220,15 +220,16 @@ impl Network {
             signal_type: SignalType::Low,
         });
 
+        let mut triggered_probes = Vec::new();
         while let Some(signal) = signal_queue.pop_front() {
             self.pulse_counts
                 .entry(signal.signal_type)
                 .and_modify(|c| *c += 1)
                 .or_insert(1);
 
-            if signal.dst == "rx" && signal.signal_type == SignalType::Low {
-                println!("Reached rx with low signal!");
-                return true;
+            if signal.signal_type == SignalType::High && probe_names.contains(&signal.src.as_str())
+            {
+                triggered_probes.push(signal.src.clone());
             }
 
             if let Some(dst_node) = self.nodes.get_mut(&signal.dst) {
@@ -237,7 +238,7 @@ impl Network {
             }
         }
 
-        return false;
+        return triggered_probes;
     }
 }
 
@@ -245,44 +246,30 @@ impl Network {
 pub fn process(input: &str) -> miette::Result<String, AocError> {
     let mut net = Network::from_str(input);
 
-    let mut presses = 0u128;
-    loop {
+    let mut presses = 0;
+    let mut probes = vec!["kf", "qk", "zs", "kr"];
+    let mut loop_sizes = HashMap::new();
+
+    while probes.len() > 0 {
+        let triggered = net.press_button_and_measure(&probes);
         presses += 1;
-        if presses % 1000000 == 0 {
-            println!("Presses: {}", presses);
-        }
 
-        if net.press_button() {
-            println!("Reached rx with low signal after {} presses", presses);
-            break;
+        for probe in triggered {
+            println!("Loop detected for probe: {} => {}", probe, presses);
+            probes.retain(|p| *p != probe);
+            loop_sizes.insert(probe, presses);
         }
     }
 
-    Ok(presses.to_string())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_process() -> miette::Result<()> {
-        let input = "broadcaster -> a, b, c
-                     %a -> b
-                     %b -> c
-                     %c -> inv
-                     &inv -> a";
-        assert_eq!("32000000", process(input)?);
-        Ok(())
+    let mut lcm = 1u64;
+    for size in loop_sizes.values() {
+        lcm = num_integer::lcm(lcm, *size);
     }
 
-    #[test]
-    fn test_process_harder() {
-        let input = "broadcaster -> a
-                     %a -> inv, con
-                     &inv -> b
-                     %b -> con
-                     &con -> output";
-        assert_eq!("11687500", process(input).unwrap());
-    }
+    Ok(lcm.to_string())
 }
+
+// Submissions:
+// 179137411 - too low
+// 1241252064 - too low
+// 231897990075517 - correct!

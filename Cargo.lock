@@ -416,6 +416,7 @@ dependencies = [
  "itertools",
  "miette",
  "nom",
+ "num-integer",
  "num-traits",
  "thiserror",
  "tracing",
