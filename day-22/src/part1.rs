@@ -1,3 +1,5 @@
+use std::cmp::{max, min};
+
 use crate::custom_error::AocError;
 
 #[derive(Debug, Clone)]
@@ -142,20 +144,14 @@ impl Brick {
 
         // Iterate over the x, y, and z coordinates of the brick
         // Since x and y coordinates can be in arbitrary order, we need to account for that
+        let start_x = min(self.start.x, self.end.x);
+        let end_x = max(self.start.x, self.end.x);
+
+        let start_y = min(self.start.y, self.end.y);
+        let end_y = max(self.start.y, self.end.y);
+
         // Z coordinates are always ordered from start to end
         for z in self.end.z..=self.start.z {
-            let (start_x, end_x) = if self.start.x < self.end.x {
-                (self.start.x, self.end.x)
-            } else {
-                (self.end.x, self.start.x)
-            };
-
-            let (start_y, end_y) = if self.start.y < self.end.y {
-                (self.start.y, self.end.y)
-            } else {
-                (self.end.y, self.start.y)
-            };
-
             for x in start_x..=end_x {
                 for y in start_y..=end_y {
                     points.push(Point3D::new(x, y, z));
