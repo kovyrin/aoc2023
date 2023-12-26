@@ -12,7 +12,7 @@ impl World {
         self.bricks.sort_by(|a, b| a.end.z.cmp(&b.end.z));
 
         // Iterate over the bricks and move them down until they can't move anymore
-        let mut max_z_seen = self.bricks.first().unwrap().start.z;
+        let mut max_z_seen = self.bricks.first().unwrap().end.z;
         println!("Max z seen is {}", max_z_seen);
 
         for i in 0..self.bricks.len() {
@@ -56,9 +56,17 @@ impl World {
             return false;
         }
 
-        // Check if the brick is on top of another brick
+        // Nearby bricks are those that have their z coordinate within 1 of the brick's z coordinates
         for other_brick in &self.bricks {
             if brick == other_brick {
+                continue;
+            }
+
+            if other_brick.end.z > brick.start.z {
+                continue;
+            }
+
+            if other_brick.start.z < brick.end.z - 1 {
                 continue;
             }
 
