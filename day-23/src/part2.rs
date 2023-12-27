@@ -43,14 +43,17 @@ fn hike(
 
     if let Some(best_steps) = best.get(&visit) {
         if steps < *best_steps {
-            println!(
-                "Skipping visit {:?} after {} steps because previously reached it in {}",
-                visit, steps, best_steps
-            );
-            return 0;
+            // println!(
+            //     "Skipping visit {:?} after {} steps because previously reached it in {}",
+            //     visit, steps, best_steps
+            // );
+            // return 0;
+        } else {
+            best.insert(visit, steps);
         }
+    } else {
+        best.insert(visit, steps);
     }
-    best.insert(visit, steps);
 
     let mut visited = visited.clone();
     visited.insert(pos);
@@ -86,28 +89,10 @@ fn hike(
     candidates.iter().max().copied().unwrap_or(0)
 }
 
-fn print_visits(
-    map: &CharMap,
-    pos: &Point<i64>,
-    visited: &HashSet<Point<i64>>,
-    best: &mut HashMap<(Point<i64>, Direction), u64>,
-) {
+fn print_visits(map: &CharMap, pos: &Point<i64>, visited: &HashSet<Point<i64>>) {
     println!("---------------------------------------------------------------------------------------------------------------------------");
-    // println!("Best visits: {:#?}", best);
-
-    // let debug_west = (Point::new(6, 13), Direction::West);
-    // assert!(best.contains_key(&debug_west));
-
-    // let debug_east = (Point::new(6, 13), Direction::East);
-    // assert!(best.contains_key(&debug_east));
-
-    // println!("---------------------------------------------------------------------------------------------------------------------------");
-
     // Create a map where all visited points are marked with a direction char from the best visits map
     let mut visited_map = map.clone();
-    // for (pos, dir) in best.keys() {
-    //     visited_map.set_cell_for_point(&pos, dir.to_char());
-    // }
 
     for pos in visited {
         visited_map.set_cell_for_point(&pos, 'O');
