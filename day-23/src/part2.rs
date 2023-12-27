@@ -39,20 +39,19 @@ fn hike(
     let finish = Point::new(map.width() as i64 - 2, map.height() as i64 - 1);
 
     let visit = (pos, dir);
-    let best_steps = best.get(&visit).copied().unwrap_or(0);
     let steps = visited.iter().count() as u64;
 
-    if steps < best_steps {
-        //     println!(
-        //         "Skipping visit {:?} after {} steps because previously reached it in {}",
-        //         visit, steps, best_steps
-        //     );
-        //     return 0;
-    } else {
-        best.insert(visit, steps);
+    if let Some(best_steps) = best.get(&visit) {
+        if steps < *best_steps {
+            println!(
+                "Skipping visit {:?} after {} steps because previously reached it in {}",
+                visit, steps, best_steps
+            );
+            return 0;
+        }
     }
+    best.insert(visit, steps);
 
-    // println!("Found a way to visit {:?} in {} steps", visit, steps);
     let mut visited = visited.clone();
     visited.insert(pos);
 
@@ -71,6 +70,7 @@ fn hike(
     let mut candidates = vec![];
     for dir in Direction::each() {
         let next = pos + dir.delta();
+
         if visited.contains(&next) {
             continue;
         }
@@ -83,7 +83,7 @@ fn hike(
         candidates.push(res);
     }
 
-    *candidates.iter().max().unwrap_or(&0)
+    candidates.iter().max().copied().unwrap_or(0)
 }
 
 fn print_visits(
