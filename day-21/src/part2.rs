@@ -133,38 +133,6 @@ mod tests {
                      ...........";
         assert_eq!("167004", process(input, 500).unwrap());
     }
-
-    fn calculate_plots(x: f64) -> f64 {
-        let a = 0.87931938698210387884;
-        let b = 1.39840335644839797169;
-        let c = -7.02062817290425300598;
-
-        a * x.powi(2) + b * x + c
-    }
-
-    #[test]
-    fn test_regression_calculation() {
-        println!("{}", calculate_plots(26501365.0));
-    }
-
-    #[test]
-    fn test_regression_vs_real() {
-        let input = include_str!("../input2.txt");
-        for steps in 1..10 {
-            let steps = 65 + steps * 131;
-            let result = process(input, steps).unwrap();
-            let result = result.parse::<usize>().unwrap();
-            let expected = calculate_plots(steps as f64) as usize;
-            println!(
-                "{}: {} vs {} => {} (diff: {})",
-                steps,
-                result,
-                expected,
-                result == expected,
-                result as i64 - expected as i64
-            );
-        }
-    }
 }
 
 // Submissions:
