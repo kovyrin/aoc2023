@@ -1,12 +1,14 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use coupe::Partition as _;
+use sprs::CsMat;
+use std::collections::HashMap;
 
 use crate::custom_error::AocError;
 
-type Graph = HashMap<String, HashMap<String, bool>>;
-
-#[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
-    let mut links: Graph = HashMap::default();
+    let mut nodes: HashMap<String, usize> = HashMap::default();
+    let mut node_id = 0;
+
+    let mut adjacency = CsMat::empty(sprs::CSR, 0);
 
     for line in input.lines() {
         let mut parts = line.trim().split(':');
@@ -16,65 +18,54 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
         for connection in connected_to {
             let connection = connection.trim().to_string();
 
-            links
-                .entry(component.clone())
-                .or_default()
-                .insert(connection.clone(), true);
+            if !nodes.contains_key(&component) {
+                nodes.insert(component.clone(), node_id);
+                node_id += 1;
+            }
 
-            links
-                .entry(connection)
-                .or_default()
-                .insert(component.clone(), true);
+            if !nodes.contains_key(&connection) {
+                nodes.insert(connection.clone(), node_id);
+                node_id += 1;
+            }
+
+            let source_id = nodes.get(&component).unwrap();
+            let target_id = nodes.get(&connection).unwrap();
+
+            // Add edge to adjacency matrix (undirected)
+            adjacency.insert(*source_id, *target_id, 1);
+            adjacency.insert(*target_id, *source_id, 1);
         }
     }
 
-    // Remove links (found through graphviz)
-    // hrs - mnf
-    // rkh - sph
-    // kpc - nnl
-    links.get_mut("hrs").unwrap().remove("mnf");
-    links.get_mut("mnf").unwrap().remove("hrs");
+    let node_count = nodes.len();
+    println!("Node count: {}", node_count);
 
-    links.get_mut("rkh").unwrap().remove("sph");
-    links.get_mut("sph").unwrap().remove("rkh");
+    // Assign all nodes to one side
+    let mut partition = vec![0; node_count];
 
-    links.get_mut("kpc").unwrap().remove("nnl");
-    links.get_mut("nnl").unwrap().remove("kpc");
+    // Flip half of the nodes to the other side
+    for i in 0..node_count / 2 {
+        partition[i] = 1;
+    }
 
-    // Count nodes on each side of hrs-mnf link
-    let left_count = count_nodes(&links, "hrs");
-    let right_count = count_nodes(&links, "mnf");
+    // All nodes have the same weight
+    let weights = vec![1.; node_count];
 
-    assert!(left_count > 0);
-    assert!(right_count > 0);
-    assert_eq!(left_count + right_count, links.len());
+    // Run the partitioning algorithm
+    coupe::FiducciaMattheyses {
+        max_imbalance: Some(0.25),
+        max_bad_move_in_a_row: 10000,
+        ..Default::default()
+    }
+    .partition(&mut partition, (adjacency.view(), &weights))
+    .unwrap();
 
-    println!("Left: {}", left_count);
-    println!("Right: {}", right_count);
+    let left_count = partition.iter().filter(|&&x| x == 0).count();
+    let right_count = partition.iter().filter(|&&x| x == 1).count();
+    println!("Left: {}, Right: {}", left_count, right_count);
 
     let result = left_count * right_count;
-
     Ok(result.to_string())
-}
-
-fn count_nodes(links: &Graph, start: &str) -> usize {
-    let mut visited: HashSet<String> = HashSet::default();
-    let mut queue = VecDeque::default();
-    queue.push_back(start);
-
-    while let Some(node) = queue.pop_front() {
-        if visited.contains(node) {
-            continue;
-        }
-
-        visited.insert(node.to_string());
-
-        for neighbor in links.get(node).unwrap().keys() {
-            queue.push_back(neighbor);
-        }
-    }
-
-    visited.len()
 }
 
 #[cfg(test)]
@@ -83,6 +74,8 @@ mod tests {
 
     #[test]
     fn test_process() -> miette::Result<()> {
+        tracing_subscriber::fmt().init();
+
         let input = "jqt: rhn xhk nvd
                      rsh: frs pzl lsr
                      xhk: hfx

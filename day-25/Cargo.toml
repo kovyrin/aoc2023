@@ -14,6 +14,8 @@ miette = { workspace = true }
 thiserror = { workspace = true }
 dhat = { workspace = true }
 num-traits = { workspace = true }
+sprs = "0"
+coupe = "0"
 
 [dev-dependencies]
 divan = { workspace = true }
