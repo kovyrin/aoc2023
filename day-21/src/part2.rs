@@ -133,17 +133,52 @@ mod tests {
                      ...........";
         assert_eq!("167004", process(input, 500).unwrap());
     }
+
+    #[test]
+    fn test_experiments() {
+        let input = include_str!("../input2.txt");
+
+        let steps = 26501365;
+        let map_width = input.lines().next().unwrap().len() as u64;
+        let start = steps % (2 * map_width);
+
+        for i in 0..10 {
+            let step = start + i * 2 * map_width;
+            let result = process(input, step as u64).unwrap().parse::<i64>().unwrap();
+            println!("Step {} -> {}", step, result,);
+        }
+    }
 }
 
-// Submissions:
-// 616953970868785 - too low
-//
-// 617565692567194
-//
-// 617565692567204 - incorrect
-// 617565692567205 - incorrect
-//
-// 617820084546712 - incorrect
-// 617820084546713 - too high
-// 641973551585794 - incorrect
-// 26741036441321596 - too high
+/*
+Notes:
+
+steps = 26501365
+map_width = 131
+
+If the answer is a function f(x) and after we exit the first square map, it repeats every 2*map_width steps, then we can
+define a new function g(x) = f(map_width/2 + 2*map_width).
+
+Now, we can run our flood fill algorithm for the first few values of x (1,2,3,4,5,6),
+mapping to step counts of 327, 589, 851 and 1113, 1375, 1637 we get a set of g(x) values:
+
+g(1) = f(327) = 94475
+g(2) = f(589) = 305871
+g(3) = f(851) = 637987
+g(4) = f(1113) = 1090823
+g(5) = f(1375) = 1664379
+g(6) = f(1637) = 2358655
+
+If we put those into a quadratic regression we get a set of parameters for a quadratic function:
+
+y = ax^2 + bx + c
+
+a = 60360
+b = 30316
+c = 3799
+
+Putting it all together, the response to our problem is:
+
+g(steps / (2*map_width)) = g(101150) = round(60360 * 101150^2 + 30316 * 101150 + 3799) = 617565692567200
+
+*/
