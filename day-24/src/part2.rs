@@ -1,7 +1,6 @@
-use crate::{
-    custom_error::AocError,
-    utils::{Line, Point3D},
-};
+use z3::{ast::Real, Config, Context, SatResult, Solver};
+
+use crate::{custom_error::AocError, utils::Point3D};
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
@@ -12,16 +11,52 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
         let coords = parts.next().unwrap().trim();
         let speeds = parts.next().unwrap().trim();
 
-        let p1 = Point3D::from_str(coords).xy();
-        let speed = Point3D::from_str(speeds).xy();
-        let p2 = p1 + speed;
+        let p1 = Point3D::from_str(coords);
+        let speed = Point3D::from_str(speeds);
 
-        lines.push(Line::new(p1, p2));
+        lines.push((p1, speed));
     }
 
-    // TODO: Solve maybe?
+    let mut smt32_lines: Vec<String> = vec![
+        "(declare-const xr Real)".to_string(),
+        "(declare-const yr Real)".to_string(),
+        "(declare-const zr Real)".to_string(),
+        "(declare-const vxr Real)".to_string(),
+        "(declare-const vyr Real)".to_string(),
+        "(declare-const vzr Real)".to_string(),
+    ];
 
-    Ok("".to_string())
+    for (h, vh) in &lines {
+        smt32_lines.push(format!(
+            r#"
+                (assert (= (- (* (- {xh} xr) (- vyr {vyh})) (* (- vxr {vxh}) (- {yh} yr))) 0))
+                (assert (= (- (* (- {yh} yr) (- vzr {vzh})) (* (- vyr {vyh}) (- {zh} zr))) 0))
+            "#,
+            xh = h.x,
+            yh = h.y,
+            zh = h.z,
+            vxh = vh.x,
+            vyh = vh.y,
+            vzh = vh.z,
+        ));
+    }
+
+    let cfg = Config::new();
+    let ctx = Context::new(&cfg);
+    let solver = Solver::new(&ctx);
+    let problem = smt32_lines.join("\n");
+    solver.from_string(problem);
+
+    assert_eq!(SatResult::Sat, solver.check());
+    let model = solver.get_model().unwrap();
+
+    let xr = model.eval(&Real::new_const(&ctx, "xr"), true).unwrap();
+    let yr = model.eval(&Real::new_const(&ctx, "yr"), true).unwrap();
+    let zr = model.eval(&Real::new_const(&ctx, "zr"), true).unwrap();
+
+    let answer = xr.as_real().unwrap().0 + yr.as_real().unwrap().0 + zr.as_real().unwrap().0;
+
+    Ok(answer.to_string())
 }
 
 #[cfg(test)]
