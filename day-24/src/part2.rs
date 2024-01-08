@@ -1,4 +1,4 @@
-use z3::{ast::Real, Config, Context, SatResult, Solver};
+use z3::{ast::Int, Config, Context, SatResult, Solver};
 
 use crate::{custom_error::AocError, utils::Point3D};
 
@@ -18,12 +18,12 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     }
 
     let mut smt32_lines: Vec<String> = vec![
-        "(declare-const xr Real)".to_string(),
-        "(declare-const yr Real)".to_string(),
-        "(declare-const zr Real)".to_string(),
-        "(declare-const vxr Real)".to_string(),
-        "(declare-const vyr Real)".to_string(),
-        "(declare-const vzr Real)".to_string(),
+        "(declare-const xr Int)".to_string(),
+        "(declare-const yr Int)".to_string(),
+        "(declare-const zr Int)".to_string(),
+        "(declare-const vxr Int)".to_string(),
+        "(declare-const vyr Int)".to_string(),
+        "(declare-const vzr Int)".to_string(),
     ];
 
     for (h, vh) in &lines {
@@ -50,11 +50,11 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     assert_eq!(SatResult::Sat, solver.check());
     let model = solver.get_model().unwrap();
 
-    let xr = model.eval(&Real::new_const(&ctx, "xr"), true).unwrap();
-    let yr = model.eval(&Real::new_const(&ctx, "yr"), true).unwrap();
-    let zr = model.eval(&Real::new_const(&ctx, "zr"), true).unwrap();
+    let xr = model.eval(&Int::new_const(&ctx, "xr"), true).unwrap();
+    let yr = model.eval(&Int::new_const(&ctx, "yr"), true).unwrap();
+    let zr = model.eval(&Int::new_const(&ctx, "zr"), true).unwrap();
 
-    let answer = xr.as_real().unwrap().0 + yr.as_real().unwrap().0 + zr.as_real().unwrap().0;
+    let answer = xr.as_i64().unwrap() + yr.as_i64().unwrap() + zr.as_i64().unwrap();
 
     Ok(answer.to_string())
 }
